@@ -32,24 +32,25 @@ class UserManager(BaseUserManager):
 
 
 class User(AbstractBaseUser, PermissionsMixin):
-    GENDER = {'male': 'Male', 'female': 'Female'}
-    AUTHENTICATION_PROVIDER = {'email': 'email', 'facebook': 'facebook'}
+    GENDER = [('male', 'Male'), ('female', 'Female')]
+    AUTHENTICATION_PROVIDER = [('email', 'email'), ('facebook', 'facebook')]
 
-    username = models.CharField(max_length=255, db_index=True)
-    email = models.EmailField(max_length=255, blank=False, db_index=True)
+    username = models.CharField(max_length=255, db_index=True, unique=True)
+    email = models.EmailField(
+        max_length=255, blank=False, db_index=True, unique=True)
     first_name = models.CharField(max_length=255)
     last_name = models.CharField(max_length=255)
     gender = models.CharField(max_length=15, choices=GENDER)
     age = models.PositiveIntegerField(blank=False)
     auth_provider = models.CharField(
-        max_length=255, choices=AUTHENTICATION_PROVIDER, default=AUTHENTICATION_PROVIDER.get('email'))
+        max_length=255, choices=AUTHENTICATION_PROVIDER, default='email')
     is_verified = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     is_superuser = models.BooleanField(default=False)
     joined_date = models.DateTimeField(auto_now=True)
 
-    REQUIRED_FIELDS = ['email']
+    REQUIRED_FIELDS = ['username']
     USERNAME_FIELD = 'email'
 
     objects = UserManager()
