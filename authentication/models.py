@@ -62,8 +62,8 @@ class User(AbstractBaseUser, PermissionsMixin):
         access_token = refresh_token.access_token
 
         tokens = {
-            'refresh-token': refresh_token,
-            'access-token': access_token
+            'refresh-token': str(refresh_token),
+            'access-token': str(access_token)
         }
 
         return tokens
