@@ -16,7 +16,7 @@ from .utility import Utils
 # Create your views here.
 class UserRegisterView(GenericAPIView):
     serializer_class = UserRegisterSerializer
-    renderer_classes = UserRegisterRenderer
+    renderer_classes = (UserRegisterRenderer, )
 
     def post(self, request):
         data = request.data
@@ -40,7 +40,9 @@ class UserRegisterView(GenericAPIView):
         email = {'subject': email_subject, 'body': email_body, 'to': email_to}
         Utils.send_email(email)
 
-        return Response(data, status=status.HTTP_201_CREATED)
+        message = "Account created successfully. Please check your email's inbox or spam folder to verify your account."
+
+        return Response({'user_data': data, 'message': message}, status=status.HTTP_201_CREATED)
 
 
 class UserEmailVerificationView(GenericAPIView):
