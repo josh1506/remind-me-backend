@@ -68,3 +68,10 @@ class UserLoginSerializer(serializers.ModelSerializer):
         else:
             raise AuthenticationFailed(
                 'Invalid username or password. Please try again.')
+
+
+class UserRequestPasswordResetSerializer(serializers.Serializer):
+    email = serializers.CharField(max_length=255, required=True)
+
+    class Meta:
+        fields = ['email']
