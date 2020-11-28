@@ -41,7 +41,6 @@ class User(AbstractBaseUser, PermissionsMixin):
     first_name = models.CharField(max_length=255)
     last_name = models.CharField(max_length=255)
     gender = models.CharField(max_length=15, choices=GENDER)
-    age = models.PositiveIntegerField(default=0)
     auth_provider = models.CharField(
         max_length=255, choices=AUTHENTICATION_PROVIDER, default='email')
     is_verified = models.BooleanField(default=False)
