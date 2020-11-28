@@ -17,7 +17,7 @@ from rest_framework import status
 
 from .serializer import UserRegisterSerializer, UserLoginSerializer, UserRequestPasswordResetSerializer
 from .renderer import UserRegisterRenderer
-from .models import User
+from users.models import User
 from .utility import Utils
 
 
