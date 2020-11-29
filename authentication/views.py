@@ -15,10 +15,11 @@ from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 from rest_framework import status
 
-from .serializer import UserRegisterSerializer, UserLoginSerializer, UserRequestPasswordResetSerializer
-from .renderer import UserRegisterRenderer
-from users.models import User
 from .utility import Utils
+from users.models import User
+from .renderer import UserRegisterRenderer
+from .serializer import (UserRegisterSerializer, UserLoginSerializer,
+                         UserRequestPasswordResetSerializer, UserSetNewPasswordSerializer)
 
 
 # Create your views here.
@@ -130,3 +131,13 @@ class VerifyPasswordResetTokenView(GenericAPIView):
 
         except DjangoUnicodeDecodeError:
             return Response({'error': 'Invalid token'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class UserSetNewPasswordView(GenericAPIView):
+    serializer_class = UserSetNewPasswordSerializer
+
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        return Response({'success': 'Password change successfully.'}, status=status.HTTP_200_OK)

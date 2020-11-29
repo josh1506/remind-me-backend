@@ -1,4 +1,7 @@
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.contrib.auth import authenticate
+from django.utils.encoding import force_str
+from django.utils.http import urlsafe_base64_decode
 
 from rest_framework import serializers
 from rest_framework.exceptions import AuthenticationFailed
@@ -75,3 +78,35 @@ class UserRequestPasswordResetSerializer(serializers.Serializer):
 
     class Meta:
         fields = ['email']
+
+
+class UserSetNewPasswordSerializer(serializers.Serializer):
+    password = serializers.CharField(
+        max_length=32, min_length=6, write_only=True)
+    uidb46 = serializers.CharField(required=True, write_only=True)
+    token = serializers.SerializerMethodField()
+
+    class Meta:
+        fields = ['password', 'uidb46', 'token']
+
+    def validate(self, attrs):
+        try:
+            password = attrs.get('password', '')
+            uidb46 = attrs.get('uidb46', '')
+            token = attrs.get('token', '')
+
+            id = force_str(urlsafe_base64_decode(uidb46))
+            user = User.objects.get(id=id)
+
+            if PasswordResetTokenGenerator().check_token(user, token):
+                raise AuthenticationFailed(
+                    {'error': 'Token is invalid. Please request another one'}, 401)
+
+            user.set_password(password)
+            user.save()
+
+            return user
+
+        except:
+            raise AuthenticationFailed(
+                {'error': 'Link is invalid. Please check or request another one'}, 401)
