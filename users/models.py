@@ -32,15 +32,11 @@ class UserManager(BaseUserManager):
 
 
 class User(AbstractBaseUser, PermissionsMixin):
-    GENDER = [('male', 'Male'), ('female', 'Female')]
     AUTHENTICATION_PROVIDER = [('email', 'email'), ('facebook', 'facebook')]
 
     username = models.CharField(max_length=255, db_index=True, unique=True)
     email = models.EmailField(
         max_length=255, blank=False, db_index=True, unique=True)
-    first_name = models.CharField(max_length=255)
-    last_name = models.CharField(max_length=255)
-    gender = models.CharField(max_length=15, choices=GENDER)
     auth_provider = models.CharField(
         max_length=255, choices=AUTHENTICATION_PROVIDER, default='email')
     is_verified = models.BooleanField(default=False)
@@ -67,3 +63,17 @@ class User(AbstractBaseUser, PermissionsMixin):
         }
 
         return tokens
+
+
+class UserIdentity(models.Model):
+    GENDER = [('male', 'Male'), ('female', 'Female')]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    profile_pic = models.ImageField(blank=True)
+    first_name = models.CharField(max_length=255)
+    last_name = models.CharField(max_length=255)
+    gender = models.CharField(max_length=15, choices=GENDER)
+    birth_date = models.DateTimeField(blank=True)
+
+    def __str__(self):
+        return self.user.username
