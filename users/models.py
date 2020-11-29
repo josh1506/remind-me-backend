@@ -65,15 +65,16 @@ class User(AbstractBaseUser, PermissionsMixin):
         return tokens
 
 
-class UserIdentity(models.Model):
+class UserDetail(models.Model):
     GENDER = [('male', 'Male'), ('female', 'Female')]
 
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='details')
     profile_pic = models.ImageField(blank=True)
     first_name = models.CharField(max_length=255)
     last_name = models.CharField(max_length=255)
     gender = models.CharField(max_length=15, choices=GENDER)
-    birth_date = models.DateTimeField(blank=True)
+    birth_date = models.DateField(blank=True)
 
     def __str__(self):
         return self.user.username

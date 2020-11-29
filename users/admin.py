@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import User
+from .models import User, UserDetail
 
 
 # Register your models here.
@@ -9,5 +9,7 @@ class UserAdmin(admin.ModelAdmin):
     exclude = ('joined_date',)
     list_filter = ['auth_provider', 'is_verified', 'is_staff',
                    'is_active', 'is_superuser', 'joined_date']
-    search_fields = ['username', 'email',
-                     'first_name', 'last_name']
+    search_fields = ['username', 'email', ]
+
+
+admin.site.register(UserDetail)
