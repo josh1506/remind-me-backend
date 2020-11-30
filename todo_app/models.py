@@ -8,7 +8,7 @@ class ToDo(models.Model):
     user = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name='todo')
     title = models.CharField(max_length=255, blank=False)
-    image = models.ImageField(blank=True)
+    image = models.ImageField(upload_to="todo_img", blank=True)
     complete = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now=True, editable=False)
 
