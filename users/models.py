@@ -70,7 +70,7 @@ class UserDetail(models.Model):
 
     user = models.OneToOneField(
         User, on_delete=models.CASCADE, related_name='details')
-    profile_pic = models.ImageField(blank=True)
+    profile_pic = models.ImageField(upload_to='profile_img', blank=True)
     first_name = models.CharField(max_length=255)
     last_name = models.CharField(max_length=255)
     gender = models.CharField(max_length=15, choices=GENDER)
