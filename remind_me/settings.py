@@ -48,7 +48,8 @@ INSTALLED_APPS = [
     'storages',
     'authentication',
     'social_auth',
-    'users'
+    'users',
+    'todo_app'
 ]
 
 MIDDLEWARE = [
