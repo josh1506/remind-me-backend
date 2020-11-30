@@ -68,7 +68,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 class UserDetail(models.Model):
     GENDER = [('male', 'Male'), ('female', 'Female')]
 
-    user = models.ForeignKey(
+    user = models.OneToOneField(
         User, on_delete=models.CASCADE, related_name='details')
     profile_pic = models.ImageField(blank=True)
     first_name = models.CharField(max_length=255)
