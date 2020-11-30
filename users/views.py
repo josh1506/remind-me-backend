@@ -16,7 +16,7 @@ class UserDetailView(GenericAPIView):
 
         if User.objects.filter(username=username).exists():
             user = User.objects.get(username=username)
-            user_details = user.details.all()[0]
+            user_details = user.details
 
             data = {
                 'user': user.username,
