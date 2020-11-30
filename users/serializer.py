@@ -15,9 +15,3 @@ class UserInfoSerializer(serializers.ModelSerializer):
         model = UserDetail
         fields = ['user', 'profile_pic', 'first_name',
                   'last_name', 'gender', 'birth_date']
-
-    def validate(self, attrs):
-        pass
-
-    def create(self, validated_data):
-        pass
