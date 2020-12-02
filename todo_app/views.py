@@ -50,3 +50,66 @@ class ToDoListView(GenericAPIView):
         data = serializer.data
 
         return Response(data)
+
+
+class ToDoListDetailView(GenericAPIView):
+    serializer_class = ToDoSerializer
+
+    def get(self, request, username, todo_id):
+        if not User.objects.filter(username=username):
+            return Response({'error': 'Username is invalid.'}, status=status.HTTP_404_NOT_FOUND)
+
+        user = User.objects.get(username=username)
+
+        if not ToDo.objects.filter(id=todo_id, user=user).exists():
+            return Response({'error': 'To-do details not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        todo = ToDo.objects.get(id=todo_id, user=user)
+        task_list = todo.task.all()
+
+        data = {
+            'id': todo.id,
+            'user': todo.user.username,
+            'title': todo.title,
+            'tasks': [{
+                'id': task.id,
+                'name': task.name,
+                'complete': task.complete,
+            } for task in task_list],
+            'complete': todo.complete
+        }
+
+        if todo.image:
+            data['image'] = todo.image
+
+        return Response({'data': data}, status=status.HTTP_200_OK)
+
+    def put(self, request, username, todo_id):
+        if not User.objects.filter(username=username).exists():
+            return Response({'error': 'Username is invalid.'}, status=status.HTTP_404_NOT_FOUND)
+
+        user = User.objects.get(username=username)
+
+        if not ToDo.objects.filter(user=user.pk, id=todo_id).exists():
+            return Response({'error': 'Todo is invalid'}, status=status.HTTP_404_NOT_FOUND)
+
+        todo = ToDo.objects.get(user=user.pk, id=todo_id)
+
+        todo.title = request.data['title']
+        todo.save()
+
+        return Response({'success': 'Updated successfully'}, status=status.HTTP_201_CREATED)
+
+    def delete(self, request, username, todo_id):
+        if not User.objects.filter(username=username).exists():
+            return Response({'error': 'Username is invalid.'}, status=status.HTTP_404_NOT_FOUND)
+
+        user = User.objects.get(username=username)
+
+        if not ToDo.objects.filter(user=user.pk, id=todo_id).exists():
+            return Response({'error': 'Todo not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        todo = ToDo.objects.get(user=user.pk, id=todo_id)
+        todo.delete()
+
+        return Response({'success': 'Todo is now deleted.'}, status=status.HTTP_200_OK)
