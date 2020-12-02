@@ -18,28 +18,35 @@ class ToDoListView(GenericAPIView):
     def get(self, request, username):
         if User.objects.filter(username=username).exists():
             user = User.objects.get(username=username)
-            todo_list_data = ToDo.objects.filter(user=user)
-            todo_list = []
-
-            for todo in todo_list_data:
-                data = {
-                    'user': todo.user.username,
+            todo_list = ToDo.objects.filter(user=user.pk)
+            data = []
+            for todo in todo_list:
+                todo_details = {
                     'title': todo.title,
                     'complete': todo.complete,
-                    'date_created': todo.date_created
+                    'date_created': todo.date_created,
                 }
 
                 if todo.image:
-                    data['image'] = todo.image
+                    todo_details['image'] = todo.image
 
-                todo_list.append(data)
+                data.append(todo_details)
 
-            return Response({'success': {'data': todo_list}}, status=status.HTTP_200_OK)
+            return Response({'success': {'data': data}}, status=status.HTTP_200_OK)
 
         else:
             return Response({'error': 'Username is invalid.'}, status=status.HTTP_404_NOT_FOUND)
 
+    def post(self, request, username):
+        if not User.objects.filter(username=username).exists():
+            return Response({'error': 'Username is invalid'})
 
-class ToDoListDetailView(GenericAPIView):
-    def get(self, request, username, todo_id):
-        pass
+        user = User.objects.get(username=username)
+        request.data['user'] = user.pk
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        data = serializer.data
+
+        return Response(data)
