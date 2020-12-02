@@ -2,17 +2,13 @@ from django.shortcuts import render
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 from rest_framework import status
-from .serializer import UserInfoSerializer
 from .models import User
 
 
 # Create your views here.
 
 class UserDetailView(GenericAPIView):
-    serializer_class = UserInfoSerializer
-
     def get(self, request, username):
-        serializer = self.serializer_class(data=request.data)
 
         if User.objects.filter(username=username).exists():
             user = User.objects.get(username=username)
@@ -23,40 +19,30 @@ class UserDetailView(GenericAPIView):
                 'email': user.email,
                 'first_name': user_details.first_name,
                 'last_name': user_details.last_name,
+                'profile_pic': '',
                 'gender': user_details.gender,
                 'birth_date': user_details.birth_date
             }
+
+            if user_details.profile_pic:
+                data['profile_pic'] = user_details.profile_pic
 
             return Response(data, status=status.HTTP_200_OK)
 
         else:
             return Response({'error': 'Username is invalid.'}, status=status.HTTP_404_NOT_FOUND)
 
-    def post(self, request, username):
-        serializer = self.serializer_class(data=request.data)
-        serializer.is_valid()
-        request_data = serializer.data
-
+    def put(self, request, username):
         if User.objects.filter(username=username).exists():
-            user = User.objects.get(username=username)
-            user_details = user.details
+            user = User.objects.get(username=username).details
+            request_data = request.data
 
-            user_details.first_name = request_data['first_name']
-            user_details.last_name = request_data['last_name']
-            user_details.gender = request_data['gender']
-            user_details.birth_date = request_data['birth_date']
-            user_details.save()
+            user.first_name = request_data['first_name']
+            user.last_name = request_data['last_name']
+            user.gender = request_data['gender']
+            user.save()
 
-            data = {
-                'user': user.username,
-                'email': user.email,
-                'first_name': user_details.first_name,
-                'last_name': user_details.last_name,
-                'gender': user_details.gender,
-                'birth_date': user_details.birth_date
-            }
-
-            return Response({'data': data}, status=status.HTTP_200_OK)
+            return Response({'success': 'Profile updated successfully'}, status=status.HTTP_200_OK)
 
         else:
             return Response({'error': 'Username is invalid.'}, status=status.HTTP_404_NOT_FOUND)
@@ -101,8 +87,7 @@ class UserRecoverAccountView(GenericAPIView):
 class UserDeleteAccountView(GenericAPIView):
     def delete(self, request, username):
         if User.objects.filter(username=username).exists():
-            user = User.objects.get(username=username)
-            user.delete()
+            User.objects.get(username=username).delete()
 
             return Response({'success': 'Your account is now closed, you will no longer have access to your account'}, status=status.HTTP_200_OK)
 
