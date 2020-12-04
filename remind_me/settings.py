@@ -49,7 +49,8 @@ INSTALLED_APPS = [
     'authentication',
     'social_auth',
     'users',
-    'todo_app'
+    'todo_app',
+    'collab'
 ]
 
 MIDDLEWARE = [
