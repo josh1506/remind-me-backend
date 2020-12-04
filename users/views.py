@@ -27,7 +27,7 @@ class UserDetailView(GenericAPIView):
             if user_details.profile_pic:
                 data['profile_pic'] = user_details.profile_pic
 
-            return Response(data, status=status.HTTP_200_OK)
+            return Response({'data': data}, status=status.HTTP_200_OK)
 
         else:
             return Response({'error': 'Username is invalid.'}, status=status.HTTP_404_NOT_FOUND)
