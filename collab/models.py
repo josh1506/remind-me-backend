@@ -21,6 +21,7 @@ class WorkBoard(models.Model):
 
     workspace = models.ForeignKey(
         Workspace, on_delete=models.CASCADE, related_name='board')
+    title = models.CharField(max_length=255, default='Work Board')
     privacy = models.CharField(
         max_length=255, choices=PRIVACY_TYPE, default='public')
     members = models.ManyToManyField(User, related_name='work_board')
