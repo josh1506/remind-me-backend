@@ -22,4 +22,5 @@ urlpatterns = [
     path('social-auth/', include('social_auth.urls')),
     path('user/', include('users.urls')),
     path('todo/', include('todo_app.urls')),
+    path('collab/', include('collab.urls')),
 ]

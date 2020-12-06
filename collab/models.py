@@ -6,8 +6,9 @@ from users.models import User
 
 class Workspace(models.Model):
     title = models.CharField(max_length=255, blank=False, default='Workspace')
-    members = models.ManyToManyField(User, related_name='workspace')
-    leader = models.OneToOneField(
+    members = models.ManyToManyField(
+        User, related_name='workspace', blank=True)
+    leader = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name='owned_workspace')
     link = models.CharField(max_length=255)
     date_created = models.DateTimeField(auto_now=True)
@@ -24,7 +25,8 @@ class WorkBoard(models.Model):
     title = models.CharField(max_length=255, default='Work Board')
     privacy = models.CharField(
         max_length=255, choices=PRIVACY_TYPE, default='public')
-    members = models.ManyToManyField(User, related_name='work_board')
+    members = models.ManyToManyField(
+        User, related_name='work_board', blank=True)
     date_created = models.DateTimeField(auto_now=True)
 
     def members_count(self):
@@ -49,7 +51,7 @@ class Task(models.Model):
         TaskGroup, on_delete=models.CASCADE, related_name='task')
     task = models.CharField(max_length=255, default='Undefined task')
     comment = models.TextField()
-    people = models.ManyToManyField(User, related_name='task')
+    people = models.ManyToManyField(User, related_name='task', blank=True)
     status = models.CharField(
         max_length=255, choices=STATUS_TYPE, default='queue')
     due_date = models.DateField()
