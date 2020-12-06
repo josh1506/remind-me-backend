@@ -6,7 +6,7 @@ from .models import Workspace, WorkBoard, TaskGroup, Task
 class WorkspaceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Workspace
-        fields = ['title', 'leader', 'link']
+        fields = ['id', 'title', 'leader', 'link']
 
     def validate(self, attrs):
         title = attrs.get('title', '')
@@ -22,16 +22,19 @@ class WorkspaceSerializer(serializers.ModelSerializer):
 class WorkBoardSerializer(serializers.ModelSerializer):
     class Meta:
         model = WorkBoard
-        fields = ['title', 'privacy']
+        fields = ['id', 'title', 'workspace', 'privacy']
+
+    def create(self, validated_data):
+        return WorkBoard.objects.create(**validated_data)
 
 
 class TaskGroupSerializer(serializers.ModelSerializer):
     class Meta:
         model = TaskGroup
-        fields = ['title']
+        fields = ['id', 'title']
 
 
 class TaskSerializer(serializers.ModelSerializer):
     class Meta:
         model = Task
-        fields = ['task', 'comment', 'status', 'due_date']
+        fields = ['id', 'task', 'comment', 'status', 'due_date']

@@ -86,13 +86,75 @@ class WorkspaceView(GenericAPIView):
         return Response({'success': 'Workspace deleted successfully.'}, status=status.HTTP_200_OK)
 
 
-class WorkBoardView(GenericAPIView):
+class WorkBoardListView(GenericAPIView):
     serializer_class = WorkBoardSerializer
 
-    def get(self, request, username):
+    def get(self, request, username, workspace_id):
+        if not User.objects.filter(username=username).exists():
+            return Response({'error': 'Username is invalid.'}, status=status.HTTP_404_NOT_FOUND)
+
+        user = User.objects.get(username=username)
+
+        if not Workspace.objects.filter(id=workspace_id).exists():
+            return Response({'error': 'Workspace is invalid'}, status=status.HTTP_404_NOT_FOUND)
+
+        workspace_leader = Workspace.objects.get(
+            id=workspace_id).leader.username
+
+        workboard = []
+
+        if username == workspace_leader:
+            workboard = [{
+                'id': workboard.pk,
+                'title': workboard.title,
+                'privacy': workboard.privacy,
+                'members-count': 1
+            } for workboard in WorkBoard.objects.filter(
+                workspace=workspace_id)]
+
+        else:
+            workboard = [{
+                'id': workboard.pk,
+                'title': workboard.title,
+                'privacy': workboard.privacy,
+                'members-count': 1
+            } for workboard in WorkBoard.objects.filter(
+                workspace=workspace_id, privacy='public', members=user.pk)]
+
+        return Response({'data': workboard}, status=status.HTTP_200_OK)
+
+    def post(self, request, username, workspace_id):
+        if not User.objects.filter(username=username).exists():
+            return Response({'error': 'Username is invalid.'}, status=status.HTTP_404_NOT_FOUND)
+
+        user = User.objects.get(username=username)
+
+        if not Workspace.objects.filter(id=workspace_id).exists():
+            return Response({'error': 'Workspace is invalid'}, status=status.HTTP_404_NOT_FOUND)
+
+        workspace_leader = Workspace.objects.get(
+            id=workspace_id).leader.username
+
+        if username == workspace_leader:
+            request.data['workspace'] = workspace_id
+
+            serializer = self.serializer_class(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+
+            data = serializer.data
+
+            return Response({'data': data}, status=status.HTTP_201_CREATED)
+
+        else:
+            return Response({'error': 'User is not authorize for this kind of action.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+
+class WorkBoardDetailView(GenericAPIView):
+    def put():
         pass
 
-    def post(self, request, username):
+    def delete():
         pass
 
 
