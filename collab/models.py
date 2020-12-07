@@ -14,7 +14,7 @@ class Workspace(models.Model):
     date_created = models.DateTimeField(auto_now=True)
 
     def members_count(self):
-        pass
+        return len(self.members.all())
 
 
 class WorkBoard(models.Model):
@@ -30,7 +30,7 @@ class WorkBoard(models.Model):
     date_created = models.DateTimeField(auto_now=True)
 
     def members_count(self):
-        pass
+        return len(self.members.all())
 
 
 class TaskGroup(models.Model):
@@ -40,7 +40,14 @@ class TaskGroup(models.Model):
     date_created = models.DateTimeField(auto_now=True)
 
     def progress(self):
-        pass
+        task_list = Task.objects.filter(task_group=self)
+        total_task = len(task_list)
+        task_completed = len(Task.objects.filter(status='done'))
+
+        if not total_task <= 0:
+            return int((task_completed/total_task) * 100)
+
+        return 100
 
 
 class Task(models.Model):
@@ -50,9 +57,20 @@ class Task(models.Model):
     task_group = models.ForeignKey(
         TaskGroup, on_delete=models.CASCADE, related_name='task')
     task = models.CharField(max_length=255, default='Undefined task')
-    comment = models.TextField()
     people = models.ManyToManyField(User, related_name='task', blank=True)
     status = models.CharField(
         max_length=255, choices=STATUS_TYPE, default='queue')
     due_date = models.DateField()
     date_created = models.DateTimeField(auto_now=True)
+
+
+class TaskComment(models.Model):
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='comment')
+    task = models.ForeignKey(
+        Task, on_delete=models.CASCADE, related_name='comment')
+    comment = models.TextField()
+    date_created = models.DateTimeField(auto_now=True)
+
+    def total_comment(self):
+        return len(Task.objects.filter(id=self.task.pk))

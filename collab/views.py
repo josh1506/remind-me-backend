@@ -24,7 +24,7 @@ class WorkspaceListView(GenericAPIView):
             'title': workspace.title,
             'link': workspace.link,
             'leader': workspace.leader.username,
-            'members-count': len(workspace.members.all())
+            'members-count': workspace.members_count()
         } for workspace in user.workspace.all()]
 
         return Response({'data': workspace_list}, status=status.HTTP_200_OK)
@@ -108,7 +108,7 @@ class WorkBoardListView(GenericAPIView):
                 'id': workboard.pk,
                 'title': workboard.title,
                 'privacy': workboard.privacy,
-                'members-count': 1
+                'members-count': workboard.members_count()
             } for workboard in WorkBoard.objects.filter(
                 workspace=workspace_id)]
 
@@ -117,7 +117,7 @@ class WorkBoardListView(GenericAPIView):
                 'id': workboard.pk,
                 'title': workboard.title,
                 'privacy': workboard.privacy,
-                'members-count': 1
+                'members-count': workboard.members_count()
             } for workboard in WorkBoard.objects.filter(
                 workspace=workspace_id, privacy='public', members=user.pk)]
 
@@ -228,7 +228,8 @@ class TaskGroupListView(GenericAPIView):
             id=workboard_id, workspace=workspace.pk, members=user.pk)
         task_group = [{
             'id': task_group.pk,
-            'title': task_group.title
+            'title': task_group.title,
+            'progress': task_group.progress()
         } for task_group in workboard.task_group.all()]
 
         return Response({'data': task_group}, status=status.HTTP_200_OK)
