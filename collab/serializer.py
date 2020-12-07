@@ -31,7 +31,7 @@ class WorkBoardSerializer(serializers.ModelSerializer):
 class TaskGroupSerializer(serializers.ModelSerializer):
     class Meta:
         model = TaskGroup
-        fields = ['id', 'title']
+        fields = ['id', 'title', 'work_board']
 
 
 class TaskSerializer(serializers.ModelSerializer):

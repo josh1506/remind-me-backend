@@ -207,13 +207,69 @@ class WorkBoardDetailView(GenericAPIView):
             return Response({'error': 'User is not authorize for this kind of action.'}, status=status.HTTP_401_UNAUTHORIZED)
 
 
-class TaskGroupView(GenericAPIView):
+class TaskGroupListView(GenericAPIView):
     serializer_class = TaskGroupSerializer
 
-    def get(self, request, username):
+    def get(self, request, username, workspace_id, workboard_id):
+        if not User.objects.filter(username=username).exists():
+            return Response({'error': 'User is invalid.'}, status=status.HTTP_404_NOT_FOUND)
+
+        user = User.objects.get(username=username)
+
+        if not Workspace.objects.filter(id=workspace_id, members=user.pk):
+            return Response({'error': 'Workspace is invalid.'}, status=status.HTTP_404_NOT_FOUND)
+
+        workspace = Workspace.objects.get(id=workspace_id, members=user.pk)
+
+        if not WorkBoard.objects.filter(id=workboard_id, workspace=workspace.pk, members=user.pk):
+            return Response({'error': 'WorkBoard is invalid.'}, status=status.HTTP_404_NOT_FOUND)
+
+        workboard = WorkBoard.objects.get(
+            id=workboard_id, workspace=workspace.pk, members=user.pk)
+        task_group = [{
+            'id': task_group.pk,
+            'title': task_group.title
+        } for task_group in workboard.task_group.all()]
+
+        return Response({'data': task_group}, status=status.HTTP_200_OK)
+
+    def post(self, request, username, workspace_id, workboard_id):
+        if not User.objects.filter(username=username).exists():
+            return Response({'error': 'User is invalid.'}, status=status.HTTP_404_NOT_FOUND)
+
+        user = User.objects.get(username=username)
+
+        if not Workspace.objects.filter(id=workspace_id, members=user.pk):
+            return Response({'error': 'Workspace is invalid.'}, status=status.HTTP_404_NOT_FOUND)
+
+        workspace = Workspace.objects.get(id=workspace_id, members=user.pk)
+
+        if not WorkBoard.objects.filter(id=workboard_id, workspace=workspace.pk, members=user.pk):
+            return Response({'error': 'WorkBoard is invalid.'}, status=status.HTTP_404_NOT_FOUND)
+
+        workboard = WorkBoard.objects.get(
+            id=workboard_id, workspace=workspace.pk, members=user.pk)
+
+        if workspace.leader.username == user.username:
+            request.data['work_board'] = workboard.pk
+
+            serializer = self.serializer_class(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+
+            data = serializer.data
+
+            return Response({'data': data}, status=status.HTTP_201_CREATED)
+
+        else:
+            return Response({'error': 'User is not authorize for this kind of action.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+
+class TaskGroupDetailView(GenericAPIView):
+    def put(self):
         pass
 
-    def post(self, request, username):
+    def delete(self):
         pass
 
 
