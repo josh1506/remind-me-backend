@@ -1,6 +1,6 @@
 from django.urls import path
 from .views import (WorkspaceListView, WorkspaceView,
-                    WorkBoardListView, WorkBoardDetailView, TaskGroupListView)
+                    WorkBoardListView, WorkBoardDetailView, TaskGroupListView, TaskGroupDetailView)
 
 
 urlpatterns = [
@@ -16,4 +16,6 @@ urlpatterns = [
 
     path('taskgroup-list/<username>/<workspace_id>/<workboard_id>/',
          TaskGroupListView.as_view(), name='taskgroup-list'),
+    path('taskgroup-detail/<username>/<workspace_id>/<workboard_id>/<taskgroup_id>/',
+         TaskGroupDetailView.as_view(), name='taskgroup-detail')
 ]
