@@ -73,4 +73,6 @@ class TaskComment(models.Model):
     date_created = models.DateTimeField(auto_now=True)
 
     def total_comment(self):
-        return len(Task.objects.filter(id=self.task.pk))
+        task = Task.objects.get(id=self.task.pk)
+
+        return len(task.comment.all())
