@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Workspace, WorkBoard, TaskGroup, Task
+from .models import (Workspace, WorkBoard, TaskGroup, Task, TaskComment)
 
 
 class WorkspaceSerializer(serializers.ModelSerializer):
@@ -37,4 +37,10 @@ class TaskGroupSerializer(serializers.ModelSerializer):
 class TaskSerializer(serializers.ModelSerializer):
     class Meta:
         model = Task
-        fields = ['id', 'task', 'comment', 'status', 'due_date']
+        fields = ['id', 'task_group', 'task', 'status', 'due_date']
+
+
+class TaskCommentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TaskComment
+        fields = ['user', 'task', 'comment', 'total_comment']
