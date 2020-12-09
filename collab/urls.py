@@ -2,7 +2,8 @@ from django.urls import path
 from .views import (WorkspaceListView, WorkspaceDetailView,
                     WorkBoardListView, WorkBoardDetailView,
                     TaskGroupListView, TaskGroupDetailView,
-                    TaskListView, TaskDetailView)
+                    TaskListView, TaskDetailView,
+                    TaskCommentListView, TaskCommentDetailView)
 
 
 urlpatterns = [
@@ -24,5 +25,10 @@ urlpatterns = [
     path('task-list/<username>/<workspace_id>/<workboard_id>/<taskgroup_id>/',
          TaskListView.as_view(), name='task-list'),
     path('task-detial/<username>/<workspace_id>/<workboard_id>/<taskgroup_id>/<task_id>/',
-         TaskDetailView.as_view(), name='task-detail')
+         TaskDetailView.as_view(), name='task-detail'),
+
+    path('task-comment-list/<username>/<workspace_id>/<workboard_id>/<taskgroup_id>/<task_id>/',
+         TaskCommentListView.as_view(), name='task-comment-list'),
+    path('task-comment-detail/<username>/<workspace_id>/<workboard_id>/<taskgroup_id>/<task_id>/<task_comment_id>/',
+         TaskCommentDetailView.as_view(), name='task-comment-detail')
 ]

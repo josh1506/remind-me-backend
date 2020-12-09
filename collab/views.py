@@ -493,16 +493,90 @@ class TaskDetailView(GenericAPIView):
 
 
 class TaskCommentListView(GenericAPIView):
-    def get(self):
-        pass
+    serializer_class = TaskCommentSerializer
 
-    def post(self):
-        pass
+    def get(self, request, username, workspace_id, workboard_id, taskgroup_id, task_id):
+        if not User.objects.filter(username=username).exists():
+            return Response({'error': 'User is invalid.'}, status=status.HTTP_404_NOT_FOUND)
+
+        user = User.objects.get(username=username)
+
+        if not Workspace.objects.filter(id=workspace_id, members=user.pk).exists():
+            return Response({'error': 'Workspace is invalid.'}, status=status.HTTP_404_NOT_FOUND)
+
+        workspace = Workspace.objects.get(id=workspace_id, members=user.pk)
+
+        if not WorkBoard.objects.filter(id=workboard_id, members=user.pk, workspace=workspace.pk).exists():
+            return Response({'error': 'WorkBoard is invalid.'}, status=status.HTTP_404_NOT_FOUND)
+
+        workboard = WorkBoard.objects.get(
+            id=workboard_id, members=user.pk, workspace=workspace.pk)
+
+        if not TaskGroup.objects.filter(id=taskgroup_id, work_board=workboard.pk).exists():
+            return Response({'error': 'TaskGroup is invalid.'}, status=status.HTTP_404_NOT_FOUND)
+
+        task_group = TaskGroup.objects.get(
+            id=taskgroup_id, work_board=workboard.pk)
+
+        if not Task.objects.filter(id=taskgroup_id, task_group=task_group.pk).exists():
+            return Response({'error': 'Task is invalid.'}, status=status.HTTP_404_NOT_FOUND)
+
+        task = Task.objects.get(id=task_id, task_group=task_group.pk)
+
+        task_commet = [{
+            'id': comment.id,
+            'user': comment.user.pk,
+            'task': comment.task.pk,
+            'comment': comment.comment,
+            'total_comment': comment.total_comment(),
+            'date_created': comment.date_created,
+        } for comment in task.comment.all()]
+
+        return Response({'data': task_commet}, status=status.HTTP_200_OK)
+
+    def post(self, request, username, workspace_id, workboard_id, taskgroup_id, task_id):
+        if not User.objects.filter(username=username).exists():
+            return Response({'error': 'User is invalid.'}, status=status.HTTP_404_NOT_FOUND)
+
+        user = User.objects.get(username=username)
+
+        if not Workspace.objects.filter(id=workspace_id, members=user.pk).exists():
+            return Response({'error': 'Workspace is invalid.'}, status=status.HTTP_404_NOT_FOUND)
+
+        workspace = Workspace.objects.get(id=workspace_id, members=user.pk)
+
+        if not WorkBoard.objects.filter(id=workboard_id, members=user.pk, workspace=workspace.pk).exists():
+            return Response({'error': 'WorkBoard is invalid.'}, status=status.HTTP_404_NOT_FOUND)
+
+        workboard = WorkBoard.objects.get(
+            id=workboard_id, members=user.pk, workspace=workspace.pk)
+
+        if not TaskGroup.objects.filter(id=taskgroup_id, work_board=workboard.pk).exists():
+            return Response({'error': 'TaskGroup is invalid.'}, status=status.HTTP_404_NOT_FOUND)
+
+        task_group = TaskGroup.objects.get(
+            id=taskgroup_id, work_board=workboard.pk)
+
+        if not Task.objects.filter(id=taskgroup_id, task_group=task_group.pk).exists():
+            return Response({'error': 'Task is invalid.'}, status=status.HTTP_404_NOT_FOUND)
+
+        task = Task.objects.get(id=task_id, task_group=task_group.pk)
+
+        request.data['user'] = user.pk
+        request.data['task'] = task.pk
+
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        data = serializer.data
+
+        return Response({'data': data}, status=status.HTTP_200_OK)
 
 
 class TaskCommentDetailView(GenericAPIView):
-    def put(self):
+    def put(self, request, username, workspace_id, workboard_id, taskgroup_id, task_id, task_comment_id):
         pass
 
-    def delete(self):
+    def delete(self, request, username, workspace_id, workboard_id, taskgroup_id, task_id, task_comment_id):
         pass
