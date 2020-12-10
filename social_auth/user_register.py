@@ -10,7 +10,7 @@ environ.Env.read_env('../.env')
 
 
 def generate_username(name):
-    username = ''.join(name.split(' ').lower())
+    username = ''.join(name.split(' ')).lower()
 
     if not User.objects.filter(username=username):
         return username
@@ -37,6 +37,8 @@ def user_social_register(user_id, email, name, provider):
                 'email': registered_user.email,
                 'tokens': registered_user.get_token(),
             }
+
+            return data
 
         else:
             return {
