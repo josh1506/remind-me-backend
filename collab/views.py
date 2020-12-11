@@ -575,8 +575,94 @@ class TaskCommentListView(GenericAPIView):
 
 
 class TaskCommentDetailView(GenericAPIView):
+    serializer_class = TaskCommentSerializer
+
     def put(self, request, username, workspace_id, workboard_id, taskgroup_id, task_id, task_comment_id):
-        pass
+        if not User.objects.filter(username=username).exists():
+            return Response({'error': 'User is invalid.'}, status=status.HTTP_404_NOT_FOUND)
+
+        user = User.objects.get(username=username)
+
+        if not Workspace.objects.filter(id=workspace_id, members=user.pk).exists():
+            return Response({'error': 'Workspace is invalid.'}, status=status.HTTP_404_NOT_FOUND)
+
+        workspace = Workspace.objects.get(id=workspace_id, members=user.pk)
+
+        if not WorkBoard.objects.filter(id=workboard_id, workspace=workspace.pk, members=user.pk).exists():
+            return Response({'error': 'WorkBoard is invalid.'}, status=status.HTTP_404_NOT_FOUND)
+
+        workboard = WorkBoard.objects.get(
+            id=workboard_id, workspace=workspace.pk, members=user.pk)
+
+        if not TaskGroup.objects.filter(id=taskgroup_id, work_board=workboard.pk).exists():
+            return Response({'error': 'TaskGroup is invalid.'}, status=status.HTTP_404_NOT_FOUND)
+
+        task_group = TaskGroup.objects.get(
+            id=taskgroup_id, work_board=workboard.pk)
+
+        if not Task.objects.filter(id=task_id, task_group=task_group.pk).exists():
+            return Response({'error': 'Task is invalid.'}, status=status.HTTP_404_NOT_FOUND)
+
+        task = Task.objects.get(id=task_id, task_group=task_group.pk)
+
+        if not TaskComment.objects.filter(id=task_comment_id, task=task.pk).exists():
+            return Response({'error': 'Task Comment is invalid.'}, status=status.HTTP_404_NOT_FOUND)
+
+        task_comment = TaskComment.objects.get(
+            id=task_comment_id, task=task.pk)
+
+        if task_comment.user.username == user.username:
+            request.data['user'] = user.pk
+            request.data['task'] = task.pk
+            serializer = self.serializer_class(data=request.data)
+            serializer.is_valid(raise_exception=True)
+
+            task_comment.comment = serializer.data['comment']
+            task_comment.save()
+
+            return Response({'success': 'Comment updated successfully.'}, status=status.HTTP_200_OK)
+
+        else:
+            return Response({'error': 'User is not authorize for this kind of action.'}, status=status.HTTP_401_UNAUTHORIZED)
 
     def delete(self, request, username, workspace_id, workboard_id, taskgroup_id, task_id, task_comment_id):
-        pass
+        if not User.objects.filter(username=username).exists():
+            return Response({'error': 'User is invalid.'}, status=status.HTTP_404_NOT_FOUND)
+
+        user = User.objects.get(username=username)
+
+        if not Workspace.objects.filter(id=workspace_id, members=user.pk).exists():
+            return Response({'error': 'Workspace is invalid.'}, status=status.HTTP_404_NOT_FOUND)
+
+        workspace = Workspace.objects.get(id=workspace_id, members=user.pk)
+
+        if not WorkBoard.objects.filter(id=workboard_id, workspace=workspace.pk, members=user.pk).exists():
+            return Response({'error': 'WorkBoard is invalid.'}, status=status.HTTP_404_NOT_FOUND)
+
+        workboard = WorkBoard.objects.get(
+            id=workboard_id, workspace=workspace.pk, members=user.pk)
+
+        if not TaskGroup.objects.filter(id=taskgroup_id, work_board=workboard.pk).exists():
+            return Response({'error': 'TaskGroup is invalid.'}, status=status.HTTP_404_NOT_FOUND)
+
+        task_group = TaskGroup.objects.get(
+            id=taskgroup_id, work_board=workboard.pk)
+
+        if not Task.objects.filter(id=task_id, task_group=task_group.pk).exists():
+            return Response({'error': 'Task is invalid.'}, status=status.HTTP_404_NOT_FOUND)
+
+        task = Task.objects.get(id=task_id, task_group=task_group.pk)
+
+        if not TaskComment.objects.filter(id=task_comment_id, task=task.pk).exists():
+            return Response({'error': 'Task Comment is invalid.'}, status=status.HTTP_404_NOT_FOUND)
+
+        task_comment = TaskComment.objects.get(
+            id=task_comment_id, task=task.pk)
+
+        if task_comment.user.username == user.username or workspace.leader.username == user.username:
+            task_comment.delete()
+
+            return Response({'success': 'Comment deleted successfully'}, status=status.HTTP_200_OK)
+
+        else:
+            return Response({'error': 'User is not authorize for this kind of action.'}, status=status.HTTP_401_UNAUTHORIZED)
