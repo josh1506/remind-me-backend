@@ -5,7 +5,7 @@ class Utils:
     @staticmethod
     def send_email(data):
         '''
-        data should contain (subject, body, to)
+        send_email(subject, body, to)
         subject - email subject/headline of the email
         body - email body
         to - who will be sending

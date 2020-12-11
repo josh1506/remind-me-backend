@@ -38,6 +38,7 @@ class UserRegisterView(GenericAPIView):
         user = User.objects.get(email=user_data['email'])
         token = str(RefreshToken.for_user(user).access_token)
 
+        # Managing on sending email to user for verifying their account
         current_site = get_current_site(request)
         link = reverse('verify-email', kwargs={'token': token})
         url = f'http://{current_site.domain}{link}'
@@ -57,6 +58,7 @@ class UserRegisterView(GenericAPIView):
 class UserEmailVerificationView(GenericAPIView):
     def get(self, request, token):
         try:
+            # Checking if the token emailed to user is valid
             data = jwt.decode(token, settings.SECRET_KEY)
             user = User.objects.get(id=data.get('user_id'))
 
@@ -77,6 +79,7 @@ class UserLoginView(GenericAPIView):
     serializer_class = UserLoginSerializer
 
     def post(self, request):
+        # User login is handled by UserLoginSerializer
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -92,6 +95,7 @@ class UserRequestPasswordResetView(GenericAPIView):
         user_data = serializer.data
 
         try:
+            # Managing on sending link to user email for resetting password
             user = User.objects.get(email=user_data['email'])
             uidb64 = urlsafe_base64_encode(smart_bytes(user.id))
             token = PasswordResetTokenGenerator().make_token(user)
@@ -121,6 +125,7 @@ class UserRequestPasswordResetView(GenericAPIView):
 class VerifyPasswordResetTokenView(GenericAPIView):
     def get(self, request, uidb64, token):
         try:
+            # Checking if UIDB64 and Token in params are valid
             id = urlsafe_base64_decode(uidb64)
             user = User.objects.get(id=id)
 
@@ -137,6 +142,7 @@ class UserSetNewPasswordView(GenericAPIView):
     serializer_class = UserSetNewPasswordSerializer
 
     def post(self, request):
+        # Updating Password is handled by UserSetNewPasswordSerializer
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
 

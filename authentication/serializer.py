@@ -45,6 +45,8 @@ class UserLoginSerializer(serializers.ModelSerializer):
         return user.get_token()
 
     def validate(self, attrs):
+
+        # Verifying if user exist
         email = attrs.get('email', '')
         password = attrs.get('password', '')
         authenticated_user = authenticate(email=email, password=password)
@@ -52,6 +54,7 @@ class UserLoginSerializer(serializers.ModelSerializer):
         if authenticated_user:
             user = User.objects.get(email=authenticated_user.email)
 
+            # Only Active and Verified account can login
             if not user.is_active:
                 raise AuthenticationFailed(
                     'User is currently disabled. Please contact us.')
@@ -95,8 +98,9 @@ class UserSetNewPasswordSerializer(serializers.Serializer):
             uidb46 = attrs.get('uidb46', '')
             token = attrs.get('token', '')
 
-            id = force_str(urlsafe_base64_decode(uidb46))
-            user = User.objects.get(id=id)
+            # Decoding UIDB64 and checking if decoded token exist
+            user_id = force_str(urlsafe_base64_decode(uidb46))
+            user = User.objects.get(id=user_id)
 
             if PasswordResetTokenGenerator().check_token(user, token):
                 raise AuthenticationFailed(

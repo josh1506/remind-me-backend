@@ -120,11 +120,16 @@ class ToDoListDetailView(GenericAPIView):
 class ToDoTaskView(GenericAPIView):
     serializer_class = ToDoTaskSerializer
 
-    def get(self, request, todo_id):
-        if not ToDo.objects.filter(id=todo_id).exists():
+    def get(self, request, username, todo_id):
+        if not User.objects.filter(username=username).exists():
+            return Response({'error': 'User is invalid.'}, status=status.HTTP_404_NOT_FOUND)
+
+        user = User.objects.get(username=username)
+
+        if not ToDo.objects.filter(id=todo_id, user=user.pk).exists():
             return Response({'error': 'To-do not found.'}, status=status.HTTP_404_NOT_FOUND)
 
-        todo = ToDo.objects.get(id=todo_id)
+        todo = ToDo.objects.get(id=todo_id, user=user.pk)
         todo_tasks = todo.task.all()
         data = [{
             'todo': task.todo.title,
@@ -134,11 +139,16 @@ class ToDoTaskView(GenericAPIView):
 
         return Response({'data': data}, status=status.HTTP_200_OK)
 
-    def post(self, request, todo_id):
-        if not ToDo.objects.filter(id=todo_id).exists():
+    def post(self, request, username, todo_id):
+        if not User.objects.filter(username=username).exists():
+            return Response({'error': 'User is invalid.'}, status=status.HTTP_404_NOT_FOUND)
+
+        user = User.objects.get(username=username)
+
+        if not ToDo.objects.filter(id=todo_id, user=user.pk).exists():
             return Response({'error': 'To-do not found'}, status=status.HTTP_404_NOT_FOUND)
 
-        todo = ToDo.objects.get(id=todo_id)
+        todo = ToDo.objects.get(id=todo_id, user=user.pk)
 
         request.data['todo'] = todo.pk
         serializer = self.serializer_class(data=request.data)
@@ -152,11 +162,21 @@ class ToDoTaskView(GenericAPIView):
 class ToDoTaskDetailView(GenericAPIView):
     serializer_class = ToDoTaskSerializer
 
-    def get(self, request, task_id):
-        if not ToDoTask.objects.filter(id=task_id).exists():
+    def get(self, request, username, todo_id, task_id):
+        if not User.objects.filter(username=username).exists():
+            return Response({'error': 'User is invalid.'}, status=status.HTTP_404_NOT_FOUND)
+
+        user = User.objects.get(username=username)
+
+        if not ToDo.objects.filter(id=todo_id, user=user.pk).exists():
+            return Response({'error': 'To-Do is invalid.'}, status=status.HTTP_404_NOT_FOUND)
+
+        todo = ToDo.objects.get(id=todo_id, user=user.pk)
+
+        if not ToDoTask.objects.filter(id=task_id, todo=todo.pk).exists():
             return Response({'error': 'Invalid task ID'}, status=status.HTTP_404_NOT_FOUND)
 
-        task = ToDoTask.objects.get(id=task_id)
+        task = ToDoTask.objects.get(id=task_id, todo=todo.pk)
 
         data = {
             'id': task.id,
@@ -167,11 +187,22 @@ class ToDoTaskDetailView(GenericAPIView):
 
         return Response({'data': data}, status=status.HTTP_200_OK)
 
-    def put(self, request, task_id):
-        if not ToDoTask.objects.filter(id=task_id):
-            return Response({'error': 'Invalid task ID'})
+    def put(self, request, username, todo_id, task_id):
+        if not User.objects.filter(username=username).exists():
+            return Response({'error': 'User is invalid.'}, status=status.HTTP_404_NOT_FOUND)
 
-        todo_task = ToDoTask.objects.get(id=task_id)
+        user = User.objects.get(username=username)
+
+        if not ToDo.objects.filter(id=todo_id, user=user.pk).exists():
+            return Response({'error': 'To-Do is invalid.'}, status=status.HTTP_404_NOT_FOUND)
+
+        todo = ToDo.objects.get(id=todo_id, user=user.pk)
+
+        if not ToDoTask.objects.filter(id=task_id, todo=todo.pk).exists():
+            return Response({'error': 'Invalid task ID'}, status=status.HTTP_404_NOT_FOUND)
+
+        task = ToDoTask.objects.get(id=task_id, todo=todo.pk)
+
         request.data['todo'] = todo_task.todo.pk
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -183,10 +214,20 @@ class ToDoTaskDetailView(GenericAPIView):
 
         return Response({'success': 'Task updated successfully'}, status=status.HTTP_200_OK)
 
-    def delete(self, request, task_id):
-        if not ToDoTask.objects.filter(id=task_id).exists():
+    def delete(self, request, username, todo_id, task_id):
+        if not User.objects.filter(username=username).exists():
+            return Response({'error': 'User is invalid.'}, status=status.HTTP_404_NOT_FOUND)
+
+        user = User.objects.get(username=username)
+
+        if not ToDo.objects.filter(id=todo_id, user=user.pk).exists():
+            return Response({'error': 'To-Do is invalid.'}, status=status.HTTP_404_NOT_FOUND)
+
+        todo = ToDo.objects.get(id=todo_id, user=user.pk)
+
+        if not ToDoTask.objects.filter(id=task_id, todo=todo.pk).exists():
             return Response({'error': 'Task ID not found.'}, status=status.HTTP_404_NOT_FOUND)
 
-        ToDoTask.objects.get(id=task_id).delete()
+        ToDoTask.objects.get(id=task_id, todo=).delete()
 
         return Response({'success': 'Task is deleted successfully'}, status=status.HTTP_200_OK)

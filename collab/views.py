@@ -17,6 +17,7 @@ from .serializer import (WorkspaceSerializer, WorkBoardSerializer,
 class WorkspaceListView(GenericAPIView):
     serializer_class = WorkspaceSerializer
 
+    # Getting all list of user workspace
     def get(self, request, username):
         if not User.objects.filter(username=username).exists():
             return Response({'error': 'Username is invalid.'}, status=status.HTTP_404_NOT_FOUND)
@@ -61,6 +62,7 @@ class WorkspaceDetailView(GenericAPIView):
         if not Workspace.objects.filter(leader=user.pk, id=workspace_id):
             return Response({'error': 'Workspace is invalid.'}, status=status.HTTP_404_NOT_FOUND)
 
+        # Only leader is authorized to update the workspace
         workspace = Workspace.objects.get(leader=user.pk, id=workspace_id)
 
         request.data['leader'] = workspace.leader.pk
@@ -83,6 +85,7 @@ class WorkspaceDetailView(GenericAPIView):
         if not Workspace.objects.filter(leader=user.pk, id=workspace_id).exists():
             return Response({'error': 'Workspace is invalid.'}, status=status.HTTP_404_NOT_FOUND)
 
+        # Only leader is authorized to delete the workspace
         Workspace.objects.get(leader=user, id=workspace_id).delete()
 
         return Response({'success': 'Workspace deleted successfully.'}, status=status.HTTP_200_OK)
@@ -105,6 +108,7 @@ class WorkBoardListView(GenericAPIView):
 
         workboard = []
 
+        # User is not in a private WorkBoard then they can only see all of the public
         if username == workspace_leader:
             workboard = [{
                 'id': workboard.pk,
@@ -137,6 +141,7 @@ class WorkBoardListView(GenericAPIView):
         workspace_leader = Workspace.objects.get(
             id=workspace_id).leader.username
 
+        # Only leader is authorized to create new workboard inside their workspace
         if username == workspace_leader:
             request.data['workspace'] = workspace_id
 
@@ -169,6 +174,7 @@ class WorkBoardDetailView(GenericAPIView):
         if not WorkBoard.objects.filter(id=workboard_id, workspace=worksapce.pk, members=user.pk).exists():
             return Response({'error': 'WorkBoard is invalid.'}, status=status.HTTP_404_NOT_FOUND)
 
+        # Only leader is authorized to update workboard details inside their workspace
         if worksapce.leader.username == user.username:
             request.data['workspace'] = worksapce.pk
             serializer = self.serializer_class(data=request.data)
@@ -199,6 +205,7 @@ class WorkBoardDetailView(GenericAPIView):
         if not WorkBoard.objects.filter(id=workboard_id, workspace=worksapce.pk, members=user.pk).exists():
             return Response({'error': 'WorkBoard is invalid.'}, status=status.HTTP_404_NOT_FOUND)
 
+        # Only leader is authorized to delete workboard inside their workspace
         if worksapce.leader.username == user.username:
             WorkBoard.objects.get(
                 id=workboard_id, workspace=worksapce.pk, members=user.pk).delete()
@@ -228,6 +235,7 @@ class TaskGroupListView(GenericAPIView):
 
         workboard = WorkBoard.objects.get(
             id=workboard_id, workspace=workspace.pk, members=user.pk)
+
         task_group = [{
             'id': task_group.pk,
             'title': task_group.title,
@@ -253,6 +261,7 @@ class TaskGroupListView(GenericAPIView):
         workboard = WorkBoard.objects.get(
             id=workboard_id, workspace=workspace.pk, members=user.pk)
 
+        # Only leader is authorized to create task group inside workboard
         if workspace.leader.username == user.username:
             request.data['work_board'] = workboard.pk
 
@@ -291,6 +300,7 @@ class TaskGroupDetailView(GenericAPIView):
         if not TaskGroup.objects.filter(id=taskgroup_id, work_board=workboard.pk).exists():
             return Response({'error': 'TaskGroup is invalid.'}, status=status.HTTP_404_NOT_FOUND)
 
+        # Only leader is authorized to update task group inside workboard
         if worksapce.leader.username == user.username:
             request.data['work_board'] = workboard.pk
             serializer = self.serializer_class(data=request.data)
@@ -326,6 +336,7 @@ class TaskGroupDetailView(GenericAPIView):
         if not TaskGroup.objects.filter(id=taskgroup_id, work_board=workboard.pk).exists():
             return Response({'error': 'TaskGroup is invalid.'}, status=status.HTTP_404_NOT_FOUND)
 
+        # Only leader is authorized to delete task group inside workboard
         if worksapce.leader.username == user.username:
             TaskGroup.objects.get(
                 id=taskgroup_id, work_board=workboard.pk).delete()
@@ -397,6 +408,7 @@ class TaskListView(GenericAPIView):
         task_group = TaskGroup.objects.get(
             id=taskgroup_id, work_board=workboard.pk)
 
+        # Only leader is authorized to create task
         if workspace.leader.username == user.username:
             request.data['task_group'] = task_group.pk
             serializer = self.serializer_class(data=request.data)
@@ -440,6 +452,7 @@ class TaskDetailView(GenericAPIView):
         if not Task.objects.filter(id=task_id, task_group=task_group.pk).exists():
             return Response({'error': 'Task is invalid.'}, status=status.HTTP_404_NOT_FOUND)
 
+        # Only leader is authorized to update task
         if workspace.leader.username == user.username:
             task = Task.objects.get(id=task_id, task_group=task_group.pk)
 
@@ -483,6 +496,7 @@ class TaskDetailView(GenericAPIView):
         if not Task.objects.filter(id=task_id, task_group=task_group.pk).exists():
             return Response({'error': 'Task is invalid.'}, status=status.HTTP_404_NOT_FOUND)
 
+        # Only leader is authorized to delete task
         if workspace.leader.username == user.username:
             Task.objects.get(id=task_id, task_group=task_group.pk).delete()
 
@@ -611,6 +625,7 @@ class TaskCommentDetailView(GenericAPIView):
         task_comment = TaskComment.objects.get(
             id=task_comment_id, task=task.pk)
 
+        # Only the user who comment is authorized to update their comment
         if task_comment.user.username == user.username:
             request.data['user'] = user.pk
             request.data['task'] = task.pk
@@ -659,6 +674,7 @@ class TaskCommentDetailView(GenericAPIView):
         task_comment = TaskComment.objects.get(
             id=task_comment_id, task=task.pk)
 
+        # Leader and user who comment is authorized to delete the comment
         if task_comment.user.username == user.username or workspace.leader.username == user.username:
             task_comment.delete()
 

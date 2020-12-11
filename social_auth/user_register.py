@@ -10,6 +10,7 @@ environ.Env.read_env('../.env')
 
 
 def generate_username(name):
+    # generate_username will loop until username is unique
     username = ''.join(name.split(' ')).lower()
 
     if not User.objects.filter(username=username):

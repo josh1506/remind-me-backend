@@ -8,24 +8,11 @@ class WorkspaceSerializer(serializers.ModelSerializer):
         model = Workspace
         fields = ['id', 'title', 'leader', 'link']
 
-    def validate(self, attrs):
-        title = attrs.get('title', '')
-        leader = attrs.get('leader', '')
-        link = attrs.get('link', '')
-
-        return attrs
-
-    def create(self, validated_data):
-        return Workspace.objects.create(**validated_data)
-
 
 class WorkBoardSerializer(serializers.ModelSerializer):
     class Meta:
         model = WorkBoard
         fields = ['id', 'title', 'workspace', 'privacy']
-
-    def create(self, validated_data):
-        return WorkBoard.objects.create(**validated_data)
 
 
 class TaskGroupSerializer(serializers.ModelSerializer):
