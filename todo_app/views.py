@@ -228,6 +228,6 @@ class ToDoTaskDetailView(GenericAPIView):
         if not ToDoTask.objects.filter(id=task_id, todo=todo.pk).exists():
             return Response({'error': 'Task ID not found.'}, status=status.HTTP_404_NOT_FOUND)
 
-        ToDoTask.objects.get(id=task_id, todo=).delete()
+        ToDoTask.objects.get(id=task_id, todo=todo.pk).delete()
 
         return Response({'success': 'Task is deleted successfully'}, status=status.HTTP_200_OK)
