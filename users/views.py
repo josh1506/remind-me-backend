@@ -9,12 +9,12 @@ from .models import User
 
 class UserDetailView(GenericAPIView):
     def get(self, request, username):
-
         if User.objects.filter(username=username).exists():
             user = User.objects.get(username=username)
             user_details = user.details
 
             data = {
+                'id': user.pk,
                 'user': user.username,
                 'email': user.email,
                 'first_name': user_details.first_name,
