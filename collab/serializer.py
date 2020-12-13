@@ -1,12 +1,23 @@
 from rest_framework import serializers
 
 from .models import (Workspace, WorkBoard, TaskGroup, Task, TaskComment)
+from .custom_middleware import Custom_Middleware as middleware
 
 
 class WorkspaceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Workspace
         fields = ['id', 'title', 'leader', 'link']
+
+    def get_workspace_list(self, username):
+        user = middleware.validate_user(username)
+
+        return [{
+            'title': workspace.title,
+            'link': workspace.link,
+            'leader': workspace.leader.username,
+            'members-count': workspace.members_count()
+        } for workspace in user.workspace.all()]
 
 
 class WorkBoardSerializer(serializers.ModelSerializer):

@@ -6,6 +6,7 @@ from rest_framework.generics import GenericAPIView
 
 from users.models import User
 from .utils import generate_link
+from .custom_middleware import Custom_Middleware as middleware
 from .models import (Workspace, WorkBoard, TaskGroup, Task, TaskComment)
 from .serializer import (WorkspaceSerializer, WorkBoardSerializer,
                          TaskGroupSerializer, TaskSerializer,
@@ -19,25 +20,14 @@ class WorkspaceListView(GenericAPIView):
 
     # Getting all list of user workspace
     def get(self, request, username):
-        if not User.objects.filter(username=username).exists():
-            return Response({'error': 'Username is invalid.'}, status=status.HTTP_404_NOT_FOUND)
+        serializer = self.serializer_class()
+        workspace = serializer.get_workspace_list(username)
 
-        user = User.objects.get(username=username)
-        workspace_list = [{
-            'title': workspace.title,
-            'link': workspace.link,
-            'leader': workspace.leader.username,
-            'members-count': workspace.members_count()
-        } for workspace in user.workspace.all()]
-
-        return Response({'data': workspace_list}, status=status.HTTP_200_OK)
+        return Response({'data': workspace}, status=status.HTTP_200_OK)
 
     # Creating new workspace for user
     def post(self, request, username):
-        if not User.objects.filter(username=username).exists():
-            return Response({'error': 'Username is invalid.'}, status=status.HTTP_404_NOT_FOUND)
-
-        user = User.objects.get(username=username)
+        user = middleware.validate_user(username)
         request.data['leader'] = user.pk
         request.data['link'] = generate_link()
 
@@ -54,16 +44,11 @@ class WorkspaceDetailView(GenericAPIView):
     serializer_class = WorkspaceSerializer
 
     def patch(self, request, username, workspace_id):
-        if not User.objects.filter(username=username).exists():
-            return Response({'error': 'Username is invalid.'}, status=status.HTTP_404_NOT_FOUND)
-
-        user = User.objects.get(username=username)
-
-        if not Workspace.objects.filter(leader=user.pk, id=workspace_id):
-            return Response({'error': 'Workspace is invalid.'}, status=status.HTTP_404_NOT_FOUND)
+        user = middleware.validate_user(username=username)
 
         # Only leader is authorized to update the workspace
-        workspace = Workspace.objects.get(leader=user.pk, id=workspace_id)
+        workspace = middleware.validate_workspace(
+            members=user.pk, workspace_id=workspace_id)
 
         request.data['leader'] = workspace.leader.pk
         request.data['link'] = workspace.link
@@ -71,22 +56,24 @@ class WorkspaceDetailView(GenericAPIView):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        workspace.title = request.data['title']
+        if not workspace.leader.username == user.username:
+            return Response({'error': 'User is not authorize for this kind of action.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        workspace.title = serializer.data['title']
         workspace.save()
 
         return Response({'success': 'Workspace updated successfully.'}, status=status.HTTP_200_OK)
 
     def delete(self, request, username, workspace_id):
-        if not User.objects.filter(username=username).exists():
-            return Response({'error': 'Username is invalid.'}, status=status.HTTP_404_NOT_FOUND)
-
-        user = User.objects.get(username=username)
-
-        if not Workspace.objects.filter(leader=user.pk, id=workspace_id).exists():
-            return Response({'error': 'Workspace is invalid.'}, status=status.HTTP_404_NOT_FOUND)
+        user = middleware.validate_user(username=username)
+        workspace = middleware.validate_workspace(
+            members=user.pk, workspace_id=workspace_id)
 
         # Only leader is authorized to delete the workspace
-        Workspace.objects.get(leader=user, id=workspace_id).delete()
+        if not workspace.leader.username == user.username:
+            return Response({'error': 'User is not authorize for this kind of action.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        workspace.delete()
 
         return Response({'success': 'Workspace deleted successfully.'}, status=status.HTTP_200_OK)
 
