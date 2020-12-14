@@ -48,7 +48,7 @@ class WorkspaceDetailView(GenericAPIView):
 
         # Only leader is authorized to update the workspace
         workspace = middleware.validate_workspace(
-            members=user.pk, workspace_id=workspace_id)
+            members_id=user.pk, workspace_id=workspace_id)
 
         request.data['leader'] = workspace.leader.pk
         request.data['link'] = workspace.link
@@ -67,7 +67,7 @@ class WorkspaceDetailView(GenericAPIView):
     def delete(self, request, username, workspace_id):
         user = middleware.validate_user(username=username)
         workspace = middleware.validate_workspace(
-            members=user.pk, workspace_id=workspace_id)
+            members_id=user.pk, workspace_id=workspace_id)
 
         # Only leader is authorized to delete the workspace
         if not workspace.leader.username == user.username:
@@ -82,66 +82,30 @@ class WorkBoardListView(GenericAPIView):
     serializer_class = WorkBoardSerializer
 
     def get(self, request, username, workspace_id):
-        if not User.objects.filter(username=username).exists():
-            return Response({'error': 'Username is invalid.'}, status=status.HTTP_404_NOT_FOUND)
-
-        user = User.objects.get(username=username)
-
-        if not Workspace.objects.filter(id=workspace_id).exists():
-            return Response({'error': 'Workspace is invalid'}, status=status.HTTP_404_NOT_FOUND)
-
-        workspace_leader = Workspace.objects.get(
-            id=workspace_id).leader.username
-
-        workboard = []
+        serializer = self.serializer_class()
+        user = middleware.validate_user(username)
+        workspace = middleware.validate_workspace(
+            members_id=user.pk, workspace_id=workspace_id)
 
         # User is not in a private WorkBoard then they can only see all of the public
-        if username == workspace_leader:
-            workboard = [{
-                'id': workboard.pk,
-                'title': workboard.title,
-                'privacy': workboard.privacy,
-                'members-count': workboard.members_count()
-            } for workboard in WorkBoard.objects.filter(
-                workspace=workspace_id)]
-
-        else:
-            workboard = [{
-                'id': workboard.pk,
-                'title': workboard.title,
-                'privacy': workboard.privacy,
-                'members-count': workboard.members_count()
-            } for workboard in WorkBoard.objects.filter(
-                workspace=workspace_id, privacy='public', members=user.pk)]
+        workboard = serializer.get_workboard_list(user, workspace)
 
         return Response({'data': workboard}, status=status.HTTP_200_OK)
 
     def post(self, request, username, workspace_id):
-        if not User.objects.filter(username=username).exists():
-            return Response({'error': 'Username is invalid.'}, status=status.HTTP_404_NOT_FOUND)
+        user = middleware.validate_user(username)
+        workspace = middleware.validate_workspace(
+            members_id=user.pk, workspace_id=workspace_id)
 
-        user = User.objects.get(username=username)
+        request.data['user'] = user.username
+        request.data['workspace-leader'] = workspace.leader.username
+        request.data['workspace'] = workspace.pk
 
-        if not Workspace.objects.filter(id=workspace_id).exists():
-            return Response({'error': 'Workspace is invalid'}, status=status.HTTP_404_NOT_FOUND)
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        workboard = serializer.data
 
-        workspace_leader = Workspace.objects.get(
-            id=workspace_id).leader.username
-
-        # Only leader is authorized to create new workboard inside their workspace
-        if username == workspace_leader:
-            request.data['workspace'] = workspace_id
-
-            serializer = self.serializer_class(data=request.data)
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
-
-            data = serializer.data
-
-            return Response({'data': data}, status=status.HTTP_201_CREATED)
-
-        else:
-            return Response({'error': 'User is not authorize for this kind of action.'}, status=status.HTTP_401_UNAUTHORIZED)
+        return Response({'data': workboard}, status=status.HTTP_201_CREATED)
 
 
 class WorkBoardDetailView(GenericAPIView):

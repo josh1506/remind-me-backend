@@ -25,6 +25,33 @@ class WorkBoardSerializer(serializers.ModelSerializer):
         model = WorkBoard
         fields = ['id', 'title', 'workspace', 'privacy']
 
+    def get_workboard_list(self, user, workspace):
+        if user.username == workspace.leader.username:
+            return [{
+                'id': workboard.pk,
+                'title': workboard.title,
+                'privacy': workboard.privacy,
+                'members-count': workboard.members_count()
+            } for workboard in workspace.board.all()]
+
+        else:
+            return [{
+                'id': workboard.pk,
+                'title': workboard.title,
+                'privacy': workboard.privacy,
+                'members-count': workboard.members_count()
+            } for workboard in workspace.board.all()]
+
+    def validate(self, attrs):
+        username = attrs.get('username', '')
+        workspace_leader = attrs.get('workspace-leader', '')
+        # Only leader is authorized to create new workboard inside their workspace
+        if username == workspace_leader:
+            return attrs
+
+        else:
+            return serializers.ValidationError({'error': 'User is not authorize for this kind of action.'}, 401)
+
 
 class TaskGroupSerializer(serializers.ModelSerializer):
     class Meta:
