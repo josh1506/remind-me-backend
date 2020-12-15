@@ -15,6 +15,7 @@ from .serializer import (WorkspaceSerializer, WorkBoardSerializer,
 
 # Create your views here.
 
+
 class WorkspaceListView(GenericAPIView):
     serializer_class = WorkspaceSerializer
 
@@ -45,37 +46,30 @@ class WorkspaceDetailView(GenericAPIView):
 
     def patch(self, request, username, workspace_id):
         user = middleware.validate_user(username=username)
-
-        # Only leader is authorized to update the workspace
         workspace = middleware.validate_workspace(
-            members_id=user.pk, workspace_id=workspace_id)
+            user=user, workspace_id=workspace_id)
 
         request.data['leader'] = workspace.leader.pk
         request.data['link'] = workspace.link
 
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
-
-        if not workspace.leader.username == user.username:
-            return Response({'error': 'User is not authorize for this kind of action.'}, status=status.HTTP_401_UNAUTHORIZED)
-
-        workspace.title = serializer.data['title']
-        workspace.save()
+        serializer.update_workspace(workspace, user, serializer.data)
 
         return Response({'success': 'Workspace updated successfully.'}, status=status.HTTP_200_OK)
 
     def delete(self, request, username, workspace_id):
         user = middleware.validate_user(username=username)
         workspace = middleware.validate_workspace(
-            members_id=user.pk, workspace_id=workspace_id)
+            user=user, workspace_id=workspace_id)
 
         # Only leader is authorized to delete the workspace
-        if not workspace.leader.username == user.username:
-            return Response({'error': 'User is not authorize for this kind of action.'}, status=status.HTTP_401_UNAUTHORIZED)
+        if workspace.leader.username == user.username:
+            workspace.delete()
 
-        workspace.delete()
+            return Response({'success': 'Workspace deleted successfully.'}, status=status.HTTP_200_OK)
 
-        return Response({'success': 'Workspace deleted successfully.'}, status=status.HTTP_200_OK)
+        return Response({'error': 'User is not authorize for this kind of action.'}, status=status.HTTP_401_UNAUTHORIZED)
 
 
 class WorkBoardListView(GenericAPIView):
@@ -85,7 +79,7 @@ class WorkBoardListView(GenericAPIView):
         serializer = self.serializer_class()
         user = middleware.validate_user(username)
         workspace = middleware.validate_workspace(
-            members_id=user.pk, workspace_id=workspace_id)
+            user=user, workspace_id=workspace_id)
 
         # User is not in a private WorkBoard then they can only see all of the public
         workboard = serializer.get_workboard_list(user, workspace)
@@ -95,9 +89,9 @@ class WorkBoardListView(GenericAPIView):
     def post(self, request, username, workspace_id):
         user = middleware.validate_user(username)
         workspace = middleware.validate_workspace(
-            members_id=user.pk, workspace_id=workspace_id)
+            user=user, workspace_id=workspace_id)
 
-        request.data['user'] = user.username
+        request.data['user'] = user
         request.data['workspace-leader'] = workspace.leader.username
         request.data['workspace'] = workspace.pk
 
@@ -112,59 +106,42 @@ class WorkBoardDetailView(GenericAPIView):
     serializer_class = WorkBoardSerializer
 
     def put(self, request, username, workspace_id, workboard_id):
-        if not User.objects.filter(username=username).exists():
-            return Response({'error': 'User is invalid.'}, status=status.HTTP_404_NOT_FOUND)
+        user = middleware.validate_user(username=username)
+        workspace = middleware.validate_workspace(
+            user=user, workspace_id=workspace_id)
 
-        user = User.objects.get(username=username)
+        workboard = middleware.validate_workboard(
+            user=user, workspace=workspace, workboard_id=workboard_id)
 
-        if not Workspace.objects.filter(members=user.pk, id=workspace_id):
-            return Response({'error': 'Worksapce is invalid.'}, status=status.HTTP_404_NOT_FOUND)
-
-        worksapce = Workspace.objects.get(id=workspace_id, members=user.pk)
-
-        if not WorkBoard.objects.filter(id=workboard_id, workspace=worksapce.pk, members=user.pk).exists():
+        if not WorkBoard.objects.filter(id=workboard_id, workspace=workspace.pk, members=user.pk).exists():
             return Response({'error': 'WorkBoard is invalid.'}, status=status.HTTP_404_NOT_FOUND)
 
         # Only leader is authorized to update workboard details inside their workspace
-        if worksapce.leader.username == user.username:
-            request.data['workspace'] = worksapce.pk
+        if workspace.leader.username == user.username:
+            request.data['workspace'] = workspace.pk
             serializer = self.serializer_class(data=request.data)
             serializer.is_valid(raise_exception=True)
-
-            workboard = WorkBoard.objects.get(
-                id=workboard_id, workspace=worksapce.pk, members=user.pk)
-            workboard.title = request.data['title']
-            workboard.privacy = request.data['privacy']
-            workboard.save()
+            serializer.update_workboard(
+                workboard=workboard, data=serializer.data)
 
             return Response({'success': 'WorkBoard updated successfully.'}, status=status.HTTP_200_OK)
 
-        else:
-            return Response({'error': 'User is not authorize for this kind of action.'}, status=status.HTTP_401_UNAUTHORIZED)
+        return Response({'error': 'User is not authorize for this kind of action.'}, status=status.HTTP_401_UNAUTHORIZED)
 
     def delete(self, request, username, workspace_id, workboard_id):
-        if not User.objects.filter(username=username).exists():
-            return Response({'error': 'User is invalid.'}, status=status.HTTP_404_NOT_FOUND)
-
-        user = User.objects.get(username=username)
-
-        if not Workspace.objects.filter(members=user.pk, id=workspace_id):
-            return Response({'error': 'Worksapce is invalid.'}, status=status.HTTP_404_NOT_FOUND)
-
-        worksapce = Workspace.objects.get(id=workspace_id, members=user.pk)
-
-        if not WorkBoard.objects.filter(id=workboard_id, workspace=worksapce.pk, members=user.pk).exists():
-            return Response({'error': 'WorkBoard is invalid.'}, status=status.HTTP_404_NOT_FOUND)
+        user = middleware.validate_user(username=username)
+        workspace = middleware.validate_workspace(
+            user=user, workspace_id=workspace_id)
+        workboard = middleware.validate_workboard(
+            user=user, workspace=workspace, workboard_id=workboard_id)
 
         # Only leader is authorized to delete workboard inside their workspace
-        if worksapce.leader.username == user.username:
-            WorkBoard.objects.get(
-                id=workboard_id, workspace=worksapce.pk, members=user.pk).delete()
+        if workspace.leader.username == user.username:
+            workboard.delete()
 
             return Response({'success': 'Workboard deleted successfully.'}, status=status.HTTP_200_OK)
 
-        else:
-            return Response({'error': 'User is not authorize for this kind of action.'}, status=status.HTTP_401_UNAUTHORIZED)
+        return Response({'error': 'User is not authorize for this kind of action.'}, status=status.HTTP_401_UNAUTHORIZED)
 
 
 class TaskGroupListView(GenericAPIView):
@@ -240,19 +217,19 @@ class TaskGroupDetailView(GenericAPIView):
         if not Workspace.objects.filter(id=workspace_id, members=user.pk).exists():
             return Response({'error': 'Workspace is invalid.'}, status=status.HTTP_404_NOT_FOUND)
 
-        worksapce = Workspace.objects.get(id=workspace_id, members=user.pk)
+        workspace = Workspace.objects.get(id=workspace_id, members=user.pk)
 
-        if not WorkBoard.objects.filter(id=workboard_id, workspace=worksapce.pk, members=user.pk):
+        if not WorkBoard.objects.filter(id=workboard_id, workspace=workspace.pk, members=user.pk):
             return Response({'error': 'WorkBoard is invalid.'}, status=status.HTTP_404_NOT_FOUND)
 
         workboard = WorkBoard.objects.get(
-            id=workboard_id, workspace=worksapce.pk)
+            id=workboard_id, workspace=workspace.pk)
 
         if not TaskGroup.objects.filter(id=taskgroup_id, work_board=workboard.pk).exists():
             return Response({'error': 'TaskGroup is invalid.'}, status=status.HTTP_404_NOT_FOUND)
 
         # Only leader is authorized to update task group inside workboard
-        if worksapce.leader.username == user.username:
+        if workspace.leader.username == user.username:
             request.data['work_board'] = workboard.pk
             serializer = self.serializer_class(data=request.data)
             serializer.is_valid()
@@ -276,19 +253,19 @@ class TaskGroupDetailView(GenericAPIView):
         if not Workspace.objects.filter(id=workspace_id, members=user.pk).exists():
             return Response({'error': 'Workspace is invalid.'}, status=status.HTTP_404_NOT_FOUND)
 
-        worksapce = Workspace.objects.get(id=workspace_id, members=user.pk)
+        workspace = Workspace.objects.get(id=workspace_id, members=user.pk)
 
-        if not WorkBoard.objects.filter(id=workboard_id, workspace=worksapce.pk, members=user.pk):
+        if not WorkBoard.objects.filter(id=workboard_id, workspace=workspace.pk, members=user.pk):
             return Response({'error': 'WorkBoard is invalid.'}, status=status.HTTP_404_NOT_FOUND)
 
         workboard = WorkBoard.objects.get(
-            id=workboard_id, workspace=worksapce.pk)
+            id=workboard_id, workspace=workspace.pk)
 
         if not TaskGroup.objects.filter(id=taskgroup_id, work_board=workboard.pk).exists():
             return Response({'error': 'TaskGroup is invalid.'}, status=status.HTTP_404_NOT_FOUND)
 
         # Only leader is authorized to delete task group inside workboard
-        if worksapce.leader.username == user.username:
+        if workspace.leader.username == user.username:
             TaskGroup.objects.get(
                 id=taskgroup_id, work_board=workboard.pk).delete()
 

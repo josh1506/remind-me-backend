@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from rest_framework.serializers import ValidationError
 
 from .models import (Workspace, WorkBoard, TaskGroup, Task, TaskComment)
 from .custom_middleware import Custom_Middleware as middleware
@@ -18,6 +19,16 @@ class WorkspaceSerializer(serializers.ModelSerializer):
             'leader': workspace.leader.username,
             'members-count': workspace.members_count()
         } for workspace in user.workspace.all()]
+
+    def update_workspace(self, workspace, user, data):
+        # Only leader is authorized to update the workspace
+        if workspace.leader.username == user.username:
+            workspace.title = data['title']
+            workspace.save()
+
+        else:
+            raise ValidationError(
+                {'error': 'User is not authorize for this kind of action.'}, 401)
 
 
 class WorkBoardSerializer(serializers.ModelSerializer):
@@ -45,12 +56,17 @@ class WorkBoardSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         username = attrs.get('username', '')
         workspace_leader = attrs.get('workspace-leader', '')
-        # Only leader is authorized to create new workboard inside their workspace
-        if username == workspace_leader:
-            return attrs
 
-        else:
-            return serializers.ValidationError({'error': 'User is not authorize for this kind of action.'}, 401)
+        # Only leader is authorized to create new workboard inside their workspace
+        if not username == workspace_leader:
+            return ValidationError({'error': 'User is not authorize for this kind of action.'}, 401)
+
+        return attrs
+
+    def update_workboard(self, workboard, data):
+        workboard.title = data['title']
+        workboard.privacy = data['privacy']
+        workboard.save()
 
 
 class TaskGroupSerializer(serializers.ModelSerializer):
