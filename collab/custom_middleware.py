@@ -64,3 +64,9 @@ class Custom_Middleware:
 
     def validate_task(self):
         pass
+
+    @staticmethod
+    def is_leader(user, workspace):
+        if not user.username == workspace.leader.username:
+            raise ValidationError(
+                {'error': 'User is not authorize for this kind of action.'}, 401)

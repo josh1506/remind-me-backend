@@ -20,15 +20,9 @@ class WorkspaceSerializer(serializers.ModelSerializer):
             'members-count': workspace.members_count()
         } for workspace in user.workspace.all()]
 
-    def update_workspace(self, workspace, user, data):
-        # Only leader is authorized to update the workspace
-        if workspace.leader.username == user.username:
-            workspace.title = data['title']
-            workspace.save()
-
-        else:
-            raise ValidationError(
-                {'error': 'User is not authorize for this kind of action.'}, 401)
+    def update_workspace(self, workspace, data):
+        workspace.title = data['title']
+        workspace.save()
 
 
 class WorkBoardSerializer(serializers.ModelSerializer):
@@ -73,6 +67,13 @@ class TaskGroupSerializer(serializers.ModelSerializer):
     class Meta:
         model = TaskGroup
         fields = ['id', 'title', 'work_board']
+
+    def get_taskgroup_list(self, workboard):
+        return [{
+            'id': task_group.pk,
+            'title': task_group.title,
+            'progress': task_group.progress()
+        } for task_group in workboard.task_group.all()]
 
 
 class TaskSerializer(serializers.ModelSerializer):
