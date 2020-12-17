@@ -84,6 +84,15 @@ class Custom_Middleware:
         return task[0]
 
     @staticmethod
+    def validate_comment(task, comment_id):
+        comment = task.comment.filter(id=comment_id)
+
+        if not comment.exists():
+            raise ValidationError({'error': 'Comment is invalid.'}, 404)
+
+        return comment[0]
+
+    @staticmethod
     def is_leader(user, workspace):
         '''
         user - user data \n

@@ -29,6 +29,6 @@ urlpatterns = [
 
     path('task-comment-list/<username>/<workspace_id>/<workboard_id>/<taskgroup_id>/<task_id>/',
          TaskCommentListView.as_view(), name='task-comment-list'),
-    path('task-comment-detail/<username>/<workspace_id>/<workboard_id>/<taskgroup_id>/<task_id>/<task_comment_id>/',
+    path('task-comment-detail/<username>/<workspace_id>/<workboard_id>/<taskgroup_id>/<task_id>/<comment_id>/',
          TaskCommentDetailView.as_view(), name='task-comment-detail')
 ]

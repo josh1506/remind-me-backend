@@ -8,7 +8,7 @@ from .custom_middleware import Custom_Middleware as middleware
 class WorkspaceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Workspace
-        fields = ['id', 'title', 'leader', 'link']
+        fields = ['id', 'title', 'members', 'leader', 'link']
 
     def get_workspace_list(self, username):
         user = middleware.validate_user(username)
@@ -28,7 +28,7 @@ class WorkspaceSerializer(serializers.ModelSerializer):
 class WorkBoardSerializer(serializers.ModelSerializer):
     class Meta:
         model = WorkBoard
-        fields = ['id', 'title', 'workspace', 'privacy']
+        fields = ['id', 'title', 'members', 'workspace', 'privacy']
 
     def get_workboard_list(self, user, workspace):
         if user.username == workspace.leader.username:
@@ -99,3 +99,13 @@ class TaskCommentSerializer(serializers.ModelSerializer):
         model = TaskComment
         fields = ['id', 'user', 'task', 'comment',
                   'total_comment', 'date_created']
+
+    def get_comments(self, task):
+        return [{
+            'id': comment.id,
+            'user': comment.user.pk,
+            'task': comment.task.pk,
+            'comment': comment.comment,
+            'total_comment': comment.total_comment(),
+            'date_created': comment.date_created,
+        } for comment in task.comment.all()]

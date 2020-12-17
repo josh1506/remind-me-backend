@@ -30,6 +30,7 @@ class WorkspaceListView(GenericAPIView):
         user = middleware.validate_user(username)
         request.data['leader'] = user.pk
         request.data['link'] = generate_link()
+        request.data['members'] = [user.pk]
 
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -50,7 +51,6 @@ class WorkspaceDetailView(GenericAPIView):
 
         # Only leader is authorized to update the workspace
         middleware.is_leader(user, workspace)
-
         request.data['leader'] = workspace.leader.pk
         request.data['link'] = workspace.link
 
@@ -94,9 +94,11 @@ class WorkBoardListView(GenericAPIView):
         request.data['user'] = user
         request.data['workspace-leader'] = workspace.leader.username
         request.data['workspace'] = workspace.pk
+        request.data['members'] = [user.pk]
 
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
+        serializer.save()
         workboard = serializer.data
 
         return Response({'data': workboard}, status=status.HTTP_201_CREATED)
@@ -231,12 +233,13 @@ class TaskListView(GenericAPIView):
         return Response({'data': task}, status=status.HTTP_200_OK)
 
     def post(self, request, username, workspace_id, workboard_id, taskgroup_id):
-        user = User.objects.get(username=username)
-        workspace = Workspace.objects.get(id=workspace_id, members=user.pk)
-        workboard = WorkBoard.objects.get(
-            id=workboard_id, workspace=workspace.pk, members=user.pk)
-        task_group = TaskGroup.objects.get(
-            id=taskgroup_id, work_board=workboard.pk)
+        user = middleware.validate_user(username)
+        workspace = middleware.validate_workspace(
+            user=user, workspace_id=workspace_id)
+        workboard = middleware.validate_workboard(
+            user=user, workspace=workspace, workboard_id=workboard_id)
+        task_group = middleware.validate_task_group(
+            workboard=workboard, taskgroup_id=taskgroup_id)
 
         # Only leader is authorized to create task
         middleware.is_leader(user=user, workspace=workspace)
@@ -255,12 +258,14 @@ class TaskDetailView(GenericAPIView):
     serializer_class = TaskSerializer
 
     def put(self, request, username, workspace_id, workboard_id, taskgroup_id, task_id):
-        user = User.objects.get(username=username)
-        workspace = Workspace.objects.get(id=workspace_id, members=user.pk)
-        workboard = WorkBoard.objects.get(
-            id=workboard_id, workspace=workspace.pk, members=user.pk)
-        task_group = TaskGroup.objects.get(
-            id=taskgroup_id, work_board=workboard.pk)
+        user = middleware.validate_user(username)
+        workspace = middleware.validate_workspace(
+            user=user, workspace_id=workspace_id)
+        workboard = middleware.validate_workboard(
+            user=user, workspace=workspace, workboard_id=workboard_id)
+        task_group = middleware.validate_task_group(
+            workboard=workboard, taskgroup_id=taskgroup_id)
+
         task = middleware.validate_task(task_id=task_id, taskgroup=task_group)
 
         # Only leader is authorized to update task
@@ -279,17 +284,18 @@ class TaskDetailView(GenericAPIView):
         return Response({'success': 'Task updated successfully.'}, status=status.HTTP_200_OK)
 
     def delete(self, request, username, workspace_id, workboard_id, taskgroup_id, task_id):
-        user = User.objects.get(username=username)
-        workspace = Workspace.objects.get(id=workspace_id, members=user.pk)
-        workboard = WorkBoard.objects.get(
-            id=workboard_id, workspace=workspace.pk, members=user.pk)
-        task_group = TaskGroup.objects.get(
-            id=taskgroup_id, work_board=workboard.pk)
+        user = middleware.validate_user(username)
+        workspace = middleware.validate_workspace(
+            user=user, workspace_id=workspace_id)
+        workboard = middleware.validate_workboard(
+            user=user, workspace=workspace, workboard_id=workboard_id)
+        task_group = middleware.validate_task_group(
+            workboard=workboard, taskgroup_id=taskgroup_id)
         task = middleware.validate_task(task_id=task_id, taskgroup=task_group)
 
         # Only leader is authorized to delete task
         middleware.is_leader(user=user, workspace=workspace)
-        Task.objects.get(id=task_id, task_group=task_group.pk).delete()
+        task.delete()
 
         return Response({'success': 'Task deleted successfully.'}, status=status.HTTP_200_OK)
 
@@ -298,71 +304,29 @@ class TaskCommentListView(GenericAPIView):
     serializer_class = TaskCommentSerializer
 
     def get(self, request, username, workspace_id, workboard_id, taskgroup_id, task_id):
-        if not User.objects.filter(username=username).exists():
-            return Response({'error': 'User is invalid.'}, status=status.HTTP_404_NOT_FOUND)
+        user = middleware.validate_user(username)
+        workspace = middleware.validate_workspace(
+            user=user, workspace_id=workspace_id)
+        workboard = middleware.validate_workboard(
+            user=user, workspace=workspace, workboard_id=workboard_id)
+        task_group = middleware.validate_task_group(
+            workboard=workboard, taskgroup_id=taskgroup_id)
+        task = middleware.validate_task(task_id=task_id, taskgroup=task_group)
 
-        user = User.objects.get(username=username)
-
-        if not Workspace.objects.filter(id=workspace_id, members=user.pk).exists():
-            return Response({'error': 'Workspace is invalid.'}, status=status.HTTP_404_NOT_FOUND)
-
-        workspace = Workspace.objects.get(id=workspace_id, members=user.pk)
-
-        if not WorkBoard.objects.filter(id=workboard_id, members=user.pk, workspace=workspace.pk).exists():
-            return Response({'error': 'WorkBoard is invalid.'}, status=status.HTTP_404_NOT_FOUND)
-
-        workboard = WorkBoard.objects.get(
-            id=workboard_id, members=user.pk, workspace=workspace.pk)
-
-        if not TaskGroup.objects.filter(id=taskgroup_id, work_board=workboard.pk).exists():
-            return Response({'error': 'TaskGroup is invalid.'}, status=status.HTTP_404_NOT_FOUND)
-
-        task_group = TaskGroup.objects.get(
-            id=taskgroup_id, work_board=workboard.pk)
-
-        if not Task.objects.filter(id=taskgroup_id, task_group=task_group.pk).exists():
-            return Response({'error': 'Task is invalid.'}, status=status.HTTP_404_NOT_FOUND)
-
-        task = Task.objects.get(id=task_id, task_group=task_group.pk)
-
-        task_commet = [{
-            'id': comment.id,
-            'user': comment.user.pk,
-            'task': comment.task.pk,
-            'comment': comment.comment,
-            'total_comment': comment.total_comment(),
-            'date_created': comment.date_created,
-        } for comment in task.comment.all()]
+        serializer = self.serializer_class()
+        task_commet = serializer.get_comments(task)
 
         return Response({'data': task_commet}, status=status.HTTP_200_OK)
 
     def post(self, request, username, workspace_id, workboard_id, taskgroup_id, task_id):
-        if not User.objects.filter(username=username).exists():
-            return Response({'error': 'User is invalid.'}, status=status.HTTP_404_NOT_FOUND)
-
-        user = User.objects.get(username=username)
-
-        if not Workspace.objects.filter(id=workspace_id, members=user.pk).exists():
-            return Response({'error': 'Workspace is invalid.'}, status=status.HTTP_404_NOT_FOUND)
-
-        workspace = Workspace.objects.get(id=workspace_id, members=user.pk)
-
-        if not WorkBoard.objects.filter(id=workboard_id, members=user.pk, workspace=workspace.pk).exists():
-            return Response({'error': 'WorkBoard is invalid.'}, status=status.HTTP_404_NOT_FOUND)
-
-        workboard = WorkBoard.objects.get(
-            id=workboard_id, members=user.pk, workspace=workspace.pk)
-
-        if not TaskGroup.objects.filter(id=taskgroup_id, work_board=workboard.pk).exists():
-            return Response({'error': 'TaskGroup is invalid.'}, status=status.HTTP_404_NOT_FOUND)
-
-        task_group = TaskGroup.objects.get(
-            id=taskgroup_id, work_board=workboard.pk)
-
-        if not Task.objects.filter(id=taskgroup_id, task_group=task_group.pk).exists():
-            return Response({'error': 'Task is invalid.'}, status=status.HTTP_404_NOT_FOUND)
-
-        task = Task.objects.get(id=task_id, task_group=task_group.pk)
+        user = middleware.validate_user(username=username)
+        workspace = middleware.validate_workspace(
+            workspace_id=workspace_id, user=user)
+        workboard = middleware.validate_workboard(
+            workboard_id=workboard_id, user=user, workspace=workspace)
+        task_group = middleware.validate_task_group(
+            taskgroup_id=taskgroup_id, workboard=workboard)
+        task = middleware.validate_task(task_id=task_id, taskgroup=task_group)
 
         request.data['user'] = user.pk
         request.data['task'] = task.pk
@@ -371,102 +335,53 @@ class TaskCommentListView(GenericAPIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
-        data = serializer.data
+        comment = serializer.data
 
-        return Response({'data': data}, status=status.HTTP_200_OK)
+        return Response({'data': comment}, status=status.HTTP_200_OK)
 
 
 class TaskCommentDetailView(GenericAPIView):
     serializer_class = TaskCommentSerializer
 
-    def put(self, request, username, workspace_id, workboard_id, taskgroup_id, task_id, task_comment_id):
-        if not User.objects.filter(username=username).exists():
-            return Response({'error': 'User is invalid.'}, status=status.HTTP_404_NOT_FOUND)
-
-        user = User.objects.get(username=username)
-
-        if not Workspace.objects.filter(id=workspace_id, members=user.pk).exists():
-            return Response({'error': 'Workspace is invalid.'}, status=status.HTTP_404_NOT_FOUND)
-
-        workspace = Workspace.objects.get(id=workspace_id, members=user.pk)
-
-        if not WorkBoard.objects.filter(id=workboard_id, workspace=workspace.pk, members=user.pk).exists():
-            return Response({'error': 'WorkBoard is invalid.'}, status=status.HTTP_404_NOT_FOUND)
-
-        workboard = WorkBoard.objects.get(
-            id=workboard_id, workspace=workspace.pk, members=user.pk)
-
-        if not TaskGroup.objects.filter(id=taskgroup_id, work_board=workboard.pk).exists():
-            return Response({'error': 'TaskGroup is invalid.'}, status=status.HTTP_404_NOT_FOUND)
-
-        task_group = TaskGroup.objects.get(
-            id=taskgroup_id, work_board=workboard.pk)
-
-        if not Task.objects.filter(id=task_id, task_group=task_group.pk).exists():
-            return Response({'error': 'Task is invalid.'}, status=status.HTTP_404_NOT_FOUND)
-
-        task = Task.objects.get(id=task_id, task_group=task_group.pk)
-
-        if not TaskComment.objects.filter(id=task_comment_id, task=task.pk).exists():
-            return Response({'error': 'Task Comment is invalid.'}, status=status.HTTP_404_NOT_FOUND)
-
-        task_comment = TaskComment.objects.get(
-            id=task_comment_id, task=task.pk)
+    def put(self, request, username, workspace_id, workboard_id, taskgroup_id, task_id, comment_id):
+        user = middleware.validate_user(username=username)
+        workspace = middleware.validate_workspace(
+            workspace_id=workspace_id, user=user)
+        workboard = middleware.validate_workboard(
+            workboard_id=workboard_id, user=user, workspace=workspace)
+        task_group = middleware.validate_task_group(
+            taskgroup_id=taskgroup_id, workboard=workboard)
+        task = middleware.validate_task(task_id=task_id, taskgroup=task_group)
+        task_comment = middleware.validate_comment(
+            comment_id=comment_id, task=task)
 
         # Only the user who comment is authorized to update their comment
-        if task_comment.user.username == user.username:
-            request.data['user'] = user.pk
-            request.data['task'] = task.pk
-            serializer = self.serializer_class(data=request.data)
-            serializer.is_valid(raise_exception=True)
+        middleware.is_leader(user=user, workspace=workspace)
 
-            task_comment.comment = serializer.data['comment']
-            task_comment.save()
+        request.data['user'] = user.pk
+        request.data['task'] = task.pk
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
 
-            return Response({'success': 'Comment updated successfully.'}, status=status.HTTP_200_OK)
+        task_comment.comment = serializer.data['comment']
+        task_comment.save()
 
-        else:
-            return Response({'error': 'User is not authorize for this kind of action.'}, status=status.HTTP_401_UNAUTHORIZED)
+        return Response({'success': 'Comment updated successfully.'}, status=status.HTTP_200_OK)
 
-    def delete(self, request, username, workspace_id, workboard_id, taskgroup_id, task_id, task_comment_id):
-        if not User.objects.filter(username=username).exists():
-            return Response({'error': 'User is invalid.'}, status=status.HTTP_404_NOT_FOUND)
+    def delete(self, request, username, workspace_id, workboard_id, taskgroup_id, task_id, comment_id):
+        user = middleware.validate_user(username)
+        workspace = middleware.validate_workspace(
+            user=user, workspace_id=workspace_id)
+        workboard = middleware.validate_workboard(
+            user=user, workspace=workspace, workboard_id=workboard_id)
+        task_group = middleware.validate_task_group(
+            workboard=workboard, taskgroup_id=taskgroup_id)
+        task = middleware.validate_task(task_id=task_id, taskgroup=task_group)
+        task_comment = middleware.validate_comment(
+            comment_id=comment_id, task=task)
 
-        user = User.objects.get(username=username)
+        # Only the user who comment is authorized to update their comment
+        middleware.is_leader(user=user, workspace=workspace)
+        task_comment.delete()
 
-        if not Workspace.objects.filter(id=workspace_id, members=user.pk).exists():
-            return Response({'error': 'Workspace is invalid.'}, status=status.HTTP_404_NOT_FOUND)
-
-        workspace = Workspace.objects.get(id=workspace_id, members=user.pk)
-
-        if not WorkBoard.objects.filter(id=workboard_id, workspace=workspace.pk, members=user.pk).exists():
-            return Response({'error': 'WorkBoard is invalid.'}, status=status.HTTP_404_NOT_FOUND)
-
-        workboard = WorkBoard.objects.get(
-            id=workboard_id, workspace=workspace.pk, members=user.pk)
-
-        if not TaskGroup.objects.filter(id=taskgroup_id, work_board=workboard.pk).exists():
-            return Response({'error': 'TaskGroup is invalid.'}, status=status.HTTP_404_NOT_FOUND)
-
-        task_group = TaskGroup.objects.get(
-            id=taskgroup_id, work_board=workboard.pk)
-
-        if not Task.objects.filter(id=task_id, task_group=task_group.pk).exists():
-            return Response({'error': 'Task is invalid.'}, status=status.HTTP_404_NOT_FOUND)
-
-        task = Task.objects.get(id=task_id, task_group=task_group.pk)
-
-        if not TaskComment.objects.filter(id=task_comment_id, task=task.pk).exists():
-            return Response({'error': 'Task Comment is invalid.'}, status=status.HTTP_404_NOT_FOUND)
-
-        task_comment = TaskComment.objects.get(
-            id=task_comment_id, task=task.pk)
-
-        # Leader and user who comment is authorized to delete the comment
-        if task_comment.user.username == user.username or workspace.leader.username == user.username:
-            task_comment.delete()
-
-            return Response({'success': 'Comment deleted successfully'}, status=status.HTTP_200_OK)
-
-        else:
-            return Response({'error': 'User is not authorize for this kind of action.'}, status=status.HTTP_401_UNAUTHORIZED)
+        return Response({'success': 'Comment deleted successfully'}, status=status.HTTP_200_OK)
