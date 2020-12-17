@@ -33,10 +33,13 @@ class Custom_Middleware:
         '''
 
         workspace = Workspace.objects.filter(
-            id=workspace_id, members=user.pk)
+            id=workspace_id)
 
         if not workspace.exists():
             raise ValidationError({'error': 'Workspace is invalid.'}, 404)
+
+        if not workspace[0].members.filter(id=user.pk).exists():
+            raise ValidationError({'error': 'User is not in workspace'}, 400)
 
         return workspace[0]
 
@@ -52,10 +55,13 @@ class Custom_Middleware:
         '''
 
         workboard = workspace.board.filter(
-            id=workboard_id, workspace=workspace.pk, members=user.pk)
+            id=workboard_id, workspace=workspace.pk)
 
         if not workboard.exists():
             raise ValidationError({'error': 'Workboard is invalid.'}, 404)
+
+        if not workboard[0].members.filter(id=user.pk).exists():
+            raise ValidationError({'error': 'User is not in workboard'}, 400)
 
         return workboard[0]
 
@@ -67,6 +73,14 @@ class Custom_Middleware:
 
     @staticmethod
     def is_leader(user, workspace):
+        '''
+        user - user data \n
+        workspace - workspace data \n
+
+        Validating if user is the leader in the current
+        workspace if not it will return 401 error which is
+        unauthorized
+        '''
         if not user.username == workspace.leader.username:
             raise ValidationError(
                 {'error': 'User is not authorize for this kind of action.'}, 401)
