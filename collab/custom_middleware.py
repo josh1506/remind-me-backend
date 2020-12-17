@@ -65,11 +65,23 @@ class Custom_Middleware:
 
         return workboard[0]
 
-    def validate_task_group(self):
-        pass
+    @staticmethod
+    def validate_task_group(workboard, taskgroup_id):
+        taskgroup = workboard.task_group.filter(id=taskgroup_id)
 
-    def validate_task(self):
-        pass
+        if not taskgroup.exists():
+            raise ValidationError({'error': 'Taskgroup is invalid.'}, 404)
+
+        return taskgroup[0]
+
+    @staticmethod
+    def validate_task(taskgroup, task_id):
+        task = taskgroup.task.filter(id=task_id)
+
+        if not task.exists():
+            raise ValidationError({'error': 'Task is invalid.'}, 404)
+
+        return task[0]
 
     @staticmethod
     def is_leader(user, workspace):

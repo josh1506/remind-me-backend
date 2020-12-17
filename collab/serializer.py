@@ -45,7 +45,7 @@ class WorkBoardSerializer(serializers.ModelSerializer):
                 'title': workboard.title,
                 'privacy': workboard.privacy,
                 'members-count': workboard.members_count()
-            } for workboard in workspace.board.all()]
+            } for workboard in workspace.board.filter(members=user.pk)]
 
     def validate(self, attrs):
         username = attrs.get('username', '')
@@ -80,6 +80,18 @@ class TaskSerializer(serializers.ModelSerializer):
     class Meta:
         model = Task
         fields = ['id', 'task_group', 'task', 'status', 'due_date']
+
+    def get_task_list(self, task_group):
+        return [{
+                'id': task.id,
+                'task': task.task,
+                'people': [{
+                    'id': people.pk,
+                    'username': people.username
+                } for people in task.people.all()],
+                'status': task.status,
+                'due_date': task.due_date,
+                } for task in task_group.task.all()]
 
 
 class TaskCommentSerializer(serializers.ModelSerializer):
