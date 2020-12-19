@@ -8,14 +8,13 @@ from .custom_middleware import Custom_Middleware as middleware
 class WorkspaceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Workspace
-        fields = ['id', 'title', 'members', 'leader', 'link']
+        fields = ['id', 'title', 'members', 'leader']
 
     def get_workspace_list(self, username):
         user = middleware.validate_user(username)
 
         return [{
             'title': workspace.title,
-            'link': workspace.link,
             'leader': workspace.leader.username,
             'members-count': workspace.members_count()
         } for workspace in user.workspace.all()]
@@ -28,13 +27,14 @@ class WorkspaceSerializer(serializers.ModelSerializer):
 class WorkBoardSerializer(serializers.ModelSerializer):
     class Meta:
         model = WorkBoard
-        fields = ['id', 'title', 'members', 'workspace', 'privacy']
+        fields = ['id', 'title', 'link', 'members', 'workspace', 'privacy']
 
     def get_workboard_list(self, user, workspace):
         if user.username == workspace.leader.username:
             return [{
                 'id': workboard.pk,
                 'title': workboard.title,
+                'link': workboard.link,
                 'privacy': workboard.privacy,
                 'members-count': workboard.members_count()
             } for workboard in workspace.board.all()]
@@ -109,3 +109,7 @@ class TaskCommentSerializer(serializers.ModelSerializer):
             'total_comment': comment.total_comment(),
             'date_created': comment.date_created,
         } for comment in task.comment.all()]
+
+
+class JoinLeaveSerializer(serializers.Serializer):
+    link = serializers.CharField(max_length=255)
