@@ -30,7 +30,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = env('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ['remind-me-django-backend.herokuapp.com', '127.0.0.1']
 
@@ -140,7 +140,9 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.1/howto/static-files/
 
 STATIC_URL = '/static/'
-STATIC_ROOT = Path.joinpath(BASE_DIR, 'static')
+STATICFILES_DIRS = [
+    Path.joinpath(BASE_DIR, 'static')
+]
 
 
 # Email fields
