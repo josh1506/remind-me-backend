@@ -35,4 +35,5 @@ sqlparse==0.4.1
 static3==0.7.0
 toml==0.10.2
 urllib3==1.26.2
+whitenoise==5.2.0
 wrapt==1.12.1
