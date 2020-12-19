@@ -93,13 +93,40 @@ class Custom_Middleware:
         return comment[0]
 
     @staticmethod
+    def validate_link(link):
+        '''
+        link - workboard link \n
+        Invalid link will return 404 error responds
+        '''
+        workboard = WorkBoard.objects.filter(link=link)
+
+        if not workboard.exists():
+            raise ValidationError({'error': 'Link is invalid.'}, 404)
+
+        return workboard[0]
+
+    @staticmethod
+    def validate_user_leave(user, workspace):
+        '''
+        user - user data \n
+        workspace - workspace data \n
+
+        Validating if user is the leader in the current
+        workspace if "Yes" it will return 404 error which is
+        bad request
+        '''
+        if user.username == workspace.leader.username:
+            raise ValidationError(
+                {'error': "Leader of workspace can't leave"}, 400)
+
+    @staticmethod
     def is_leader(user, workspace):
         '''
         user - user data \n
         workspace - workspace data \n
 
         Validating if user is the leader in the current
-        workspace if not it will return 401 error which is
+        workspace if "Not" it will return 401 error which is
         unauthorized
         '''
         if not user.username == workspace.leader.username:
