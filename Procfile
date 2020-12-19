@@ -1,0 +1,1 @@
+web: gunicorn remind_me.wsgi --log-file -
