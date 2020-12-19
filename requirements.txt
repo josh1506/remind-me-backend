@@ -1,5 +1,2 @@
 -r requirements-dev.txt
 gunicorn
-django-cors-headers
-environ
-django-rest-framework
