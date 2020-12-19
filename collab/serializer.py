@@ -14,6 +14,7 @@ class WorkspaceSerializer(serializers.ModelSerializer):
         user = middleware.validate_user(username)
 
         return [{
+            'id': workspace.id,
             'title': workspace.title,
             'leader': workspace.leader.username,
             'members-count': workspace.members_count()
