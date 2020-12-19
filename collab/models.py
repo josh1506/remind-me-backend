@@ -10,7 +10,6 @@ class Workspace(models.Model):
         User, related_name='workspace', blank=True)
     leader = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name='owned_workspace')
-    link = models.CharField(max_length=255)
     date_created = models.DateTimeField(auto_now=True)
 
     def members_count(self):
@@ -23,6 +22,7 @@ class WorkBoard(models.Model):
     workspace = models.ForeignKey(
         Workspace, on_delete=models.CASCADE, related_name='board')
     title = models.CharField(max_length=255, default='Work Board')
+    link = models.CharField(max_length=255)
     privacy = models.CharField(
         max_length=255, choices=PRIVACY_TYPE, default='public')
     members = models.ManyToManyField(
