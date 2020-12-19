@@ -10,7 +10,7 @@ from .custom_middleware import Custom_Middleware as middleware
 from .models import (Workspace, WorkBoard, TaskGroup, Task, TaskComment)
 from .serializer import (WorkspaceSerializer, WorkBoardSerializer,
                          TaskGroupSerializer, TaskSerializer,
-                         TaskCommentSerializer)
+                         TaskCommentSerializer, JoinLeaveSerializer)
 
 
 # Create your views here.
@@ -29,7 +29,6 @@ class WorkspaceListView(GenericAPIView):
     def post(self, request, username):
         user = middleware.validate_user(username)
         request.data['leader'] = user.pk
-        request.data['link'] = generate_link()
         request.data['members'] = [user.pk]
 
         serializer = self.serializer_class(data=request.data)
@@ -95,6 +94,7 @@ class WorkBoardListView(GenericAPIView):
         request.data['workspace-leader'] = workspace.leader.username
         request.data['workspace'] = workspace.pk
         request.data['members'] = [user.pk]
+        request.data['link'] = generate_link()
 
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -385,3 +385,50 @@ class TaskCommentDetailView(GenericAPIView):
         task_comment.delete()
 
         return Response({'success': 'Comment deleted successfully'}, status=status.HTTP_200_OK)
+
+
+# Joining and Leaving in workboard
+
+class JoinWorkboardView(GenericAPIView):
+    serializer_class = JoinLeaveSerializer
+
+    def post(self, request, username):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.data
+
+        user = middleware.validate_user(username)
+        workboard = middleware.validate_link(data['link'])
+        workspace = Workspace.objects.get(id=workboard.workspace.pk)
+
+        workspace.members.add(user.pk)
+        workboard.members.add(user.pk)
+
+        return Response({'success': 'Join successfuly.'}, status=status.HTTP_200_OK)
+
+
+class LeaveWorkboardView(GenericAPIView):
+    def delete(self, request, username, workspace_id, workboard_id):
+        user = middleware.validate_user(username)
+        workspace = middleware.validate_workspace(
+            user=user, workspace_id=workspace_id)
+        workboard = middleware.validate_workboard(
+            user=user, workspace=workspace, workboard_id=workboard_id)
+        workboard.members.remove(user.pk)
+
+        return Response({'success': 'Leave successfuly in workboard.'}, status=status.HTTP_200_OK)
+
+
+class LeaveWorkspaceView(GenericAPIView):
+    def delete(self, request, username, workspace_id):
+        user = middleware.validate_user(username)
+        workspace = middleware.validate_workspace(
+            workspace_id=workspace_id, user=user)
+        middleware.validate_user_leave(user=user, workspace=workspace)
+
+        [workboard.members.remove(user.pk)
+         for workboard in workspace.board.all()]
+
+        workspace.members.remove(user.pk)
+
+        return Response({'success': 'Leave successfuly in workspace.'}, status=status.HTTP_200_OK)
