@@ -32,7 +32,7 @@ SECRET_KEY = env('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['https://remindme-backend.herokuapp.com/', '127.0.0.1']
+ALLOWED_HOSTS = ['remindme-backend.herokuapp.com/', '127.0.0.1']
 
 AUTH_USER_MODEL = 'users.User'
 # Application definition
