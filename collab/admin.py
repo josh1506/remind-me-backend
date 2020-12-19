@@ -7,7 +7,7 @@ from .models import (Workspace, WorkBoard, TaskGroup, Task, TaskComment)
 
 @admin.register(Workspace)
 class WorkspaceAdmin(admin.ModelAdmin):
-    list_display = ['title', 'leader', 'link', 'date_created', 'id']
+    list_display = ['title', 'leader', 'date_created', 'id']
     search_fields = ['title', 'leader']
     list_filter = ['leader', 'date_created']
     exclude = ('date_created', )
@@ -15,7 +15,7 @@ class WorkspaceAdmin(admin.ModelAdmin):
 
 @admin.register(WorkBoard)
 class WorkBoardAdmin(admin.ModelAdmin):
-    list_display = ['title', 'privacy', 'date_created', 'id']
+    list_display = ['title', 'privacy', 'link', 'date_created', 'id']
     search_fields = ['title', 'privacy']
     list_filter = ['privacy', 'date_created']
     exclude = ('date_created', )
