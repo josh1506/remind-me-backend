@@ -98,6 +98,7 @@ class ToDoListDetailView(GenericAPIView):
         todo = ToDo.objects.get(user=user.pk, id=todo_id)
 
         todo.title = request.data['title']
+        todo.complete = request.data['complete']
         todo.save()
 
         return Response({'success': 'Updated successfully'}, status=status.HTTP_201_CREATED)
